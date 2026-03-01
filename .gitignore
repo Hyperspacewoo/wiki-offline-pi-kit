@@ -1,0 +1,12 @@
+# Large content
+*.zim
+*.zimaa
+*.zim*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# OS
+.DS_Store

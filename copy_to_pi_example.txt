@@ -1,0 +1,14 @@
+Example copy commands from your current machine:
+
+1) Copy kit folder:
+scp -r /home/void/.openclaw/workspace/pi-wiki-kit pi@<PI_IP>:~/
+
+2) Copy ZIM file (large; may take a while):
+scp /home/void/wiki/zim/wikipedia_en_all_nopic_2025-12.zim pi@<PI_IP>:/mnt/wiki-ssd/
+
+Then SSH into Pi:
+ssh pi@<PI_IP>
+cd ~/pi-wiki-kit
+chmod +x install_pi_wiki.sh setup_kiwix_service.sh
+./install_pi_wiki.sh
+./setup_kiwix_service.sh /mnt/wiki-ssd/wikipedia_en_all_nopic_2025-12.zim
