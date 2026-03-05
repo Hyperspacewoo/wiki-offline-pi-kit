@@ -5,6 +5,8 @@ Overview
 --------
 This kit gives you a production-style offline stack on laptop or Pi:
 
+Note on `pi-wiki-kit`: that older kit is optional now (legacy/simple terminal-first mode). The `wiki-offline-pi-kit` stack already includes terminal parsing/search (`wiki-ask`) plus the modern dashboard/map features.
+
 - Kiwix server for ZIM libraries (`:8080`)
 - Enterprise-style content manager dashboard (`:8090`)
 - Offline OSM map UI with town search (`:8091`)

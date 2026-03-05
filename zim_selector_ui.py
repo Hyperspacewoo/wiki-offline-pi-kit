@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
-from flask import Flask, request, redirect, url_for, render_template_string
+from flask import Flask, request, redirect, url_for, render_template_string, jsonify
 from pathlib import Path
 import subprocess
+import requests
+from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
 LIST_FILE = Path.home() / "wiki/data/active_zims.txt"
+KIWIX_BASE = "http://127.0.0.1:8080"
+
 DEFAULT_ROOTS = [
     Path("/mnt/wiki-ssd"),
     Path.home() / "wiki/zim",
@@ -131,6 +135,45 @@ HTML = """
         if (cb) cb.checked = flag;
       });
     }
+
+    async function wikiSearch() {
+      const q = (document.getElementById('wikiQ').value || '').trim();
+      const list = document.getElementById('wikiResults');
+      const parsed = document.getElementById('wikiParsed');
+      parsed.textContent = '';
+      if (!q) {
+        list.innerHTML = '<div class="muted">Enter a search query.</div>';
+        return;
+      }
+      list.innerHTML = '<div class="muted">Searching…</div>';
+      try {
+        const rows = await fetch('/api/wiki/search?q=' + encodeURIComponent(q)).then(r => r.json());
+        if (!rows.length) {
+          list.innerHTML = '<div class="muted">No results.</div>';
+          return;
+        }
+        list.innerHTML = rows.map((r, i) => `
+          <div style="padding:8px;border-bottom:1px solid #24345d;">
+            <div><strong>${i+1}. ${r.title}</strong></div>
+            <div class="muted"><a href="${r.url}" target="_blank">Open full article</a></div>
+            <button class="btn ghost" style="margin-top:6px;" onclick="wikiParse('${encodeURIComponent(r.url)}')">Parse excerpt</button>
+          </div>
+        `).join('');
+      } catch (e) {
+        list.innerHTML = '<div class="muted">Search failed.</div>';
+      }
+    }
+
+    async function wikiParse(encUrl) {
+      const parsed = document.getElementById('wikiParsed');
+      parsed.textContent = 'Parsing…';
+      try {
+        const data = await fetch('/api/wiki/parse?url=' + encUrl).then(r => r.json());
+        parsed.textContent = data.text || 'No text extracted.';
+      } catch (e) {
+        parsed.textContent = 'Parse failed.';
+      }
+    }
   </script>
 </head>
 <body>
@@ -167,6 +210,21 @@ HTML = """
         <form method="post" action="/apply_profile"><input type="hidden" name="scan_dir" value="{{ scan_dir }}" /><input type="hidden" name="profile" value="general" /><button class="btn" type="submit">📘 General</button></form>
         <form method="post" action="/apply_profile"><input type="hidden" name="scan_dir" value="{{ scan_dir }}" /><input type="hidden" name="profile" value="medical" /><button class="btn" type="submit">🩺 Medical</button></form>
         <form method="post" action="/apply_profile"><input type="hidden" name="scan_dir" value="{{ scan_dir }}" /><input type="hidden" name="profile" value="maps" /><button class="btn" type="submit">🗺️ Maps</button></form>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:0 0 8px;">Wiki Search</h3>
+      <p class="muted" style="margin-top:0;">Search your active Kiwix content, parse quick excerpts, and open full articles.</p>
+      <div class="row">
+        <input id="wikiQ" class="grow" type="text" placeholder="Search Wikipedia (example: black holes)" />
+        <button class="btn primary" type="button" onclick="wikiSearch()">Search</button>
+      </div>
+      <div class="row" style="align-items:flex-start;margin-top:10px;">
+        <div class="grow" style="border:1px solid var(--border);border-radius:10px;max-height:240px;overflow:auto;padding:6px;" id="wikiResults">
+          <div class="muted">Run a query to see results.</div>
+        </div>
+        <div class="grow" style="border:1px solid var(--border);border-radius:10px;max-height:240px;overflow:auto;padding:10px;white-space:pre-wrap;" id="wikiParsed"></div>
       </div>
     </div>
 
@@ -323,6 +381,48 @@ def restart_kiwix():
         return f"Saved selection, but restart failed: {e}"
 
 
+def wiki_search(query: str, limit: int = 8):
+    r = requests.get(f"{KIWIX_BASE}/search", params={"pattern": query}, timeout=20)
+    r.raise_for_status()
+    soup = BeautifulSoup(r.text, "lxml")
+    out = []
+    seen = set()
+    for a in soup.select("a[href]"):
+      href = a.get("href", "")
+      title = a.get_text(" ", strip=True)
+      if "/content/" not in href or not title:
+          continue
+      if href.startswith("/"):
+          href = KIWIX_BASE + href
+      if href in seen:
+          continue
+      seen.add(href)
+      out.append({"title": title, "url": href})
+      if len(out) >= limit:
+          break
+    return out
+
+
+def wiki_parse(url: str, max_chars: int = 3500):
+    r = requests.get(url, timeout=20)
+    r.raise_for_status()
+    soup = BeautifulSoup(r.text, "lxml")
+    for tag in soup(["script", "style", "nav", "header", "footer", "aside", "noscript"]):
+        tag.decompose()
+    main = (
+        soup.select_one("#mw-content-text")
+        or soup.select_one(".mw-parser-output")
+        or soup.select_one("article")
+        or soup.select_one("#content")
+        or soup.body
+        or soup
+    )
+    paras = [p.get_text(" ", strip=True) for p in main.select("p") if p.get_text(" ", strip=True)]
+    text = "\n\n".join(paras) if paras else main.get_text("\n", strip=True)
+    text = "\n".join(line for line in text.splitlines() if line.strip())
+    return text[:max_chars]
+
+
 def build_page(extra_scan_dir: str, msg: str | None = None):
     roots = build_roots(extra_scan_dir)
     paths = scan_zims(roots)
@@ -408,6 +508,29 @@ def apply_profile():
     LIST_FILE.write_text("\n".join(selected) + "\n")
     msg = f"Applied profile '{chosen}' with {len(selected)} ZIM(s). " + restart_kiwix()
     return redirect(url_for("index", msg=msg, scan_dir=scan_dir))
+
+
+@app.get("/api/wiki/search")
+def api_wiki_search():
+    q = (request.args.get("q") or "").strip()
+    if not q:
+        return jsonify([])
+    try:
+        return jsonify(wiki_search(q))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.get("/api/wiki/parse")
+def api_wiki_parse():
+    url = (request.args.get("url") or "").strip()
+    if not url:
+        return jsonify({"text": ""})
+    try:
+        text = wiki_parse(url)
+        return jsonify({"text": text})
+    except Exception as e:
+        return jsonify({"error": str(e), "text": ""}), 500
 
 
 if __name__ == "__main__":
