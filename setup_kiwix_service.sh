@@ -2,15 +2,17 @@
 set -euo pipefail
 
 if [[ $# -lt 1 ]]; then
-  echo "Usage: $0 /absolute/path/to/wikipedia.zim"
+  echo "Usage: $0 /absolute/path/to/wiki1.zim [/absolute/path/to/wiki2.zim ...]"
   exit 1
 fi
 
-ZIM_PATH="$1"
-if [[ ! -f "$ZIM_PATH" ]]; then
-  echo "Error: file not found: $ZIM_PATH"
-  exit 1
-fi
+ZIMS=("$@")
+for zim in "${ZIMS[@]}"; do
+  if [[ ! -f "$zim" ]]; then
+    echo "Error: file not found: $zim"
+    exit 1
+  fi
+done
 
 KIWIX_BIN="$(command -v kiwix-serve || true)"
 if [[ -z "$KIWIX_BIN" ]]; then
@@ -19,6 +21,11 @@ if [[ -z "$KIWIX_BIN" ]]; then
 fi
 
 RUN_USER="$(id -un)"
+LIST_FILE="/home/${RUN_USER}/wiki/data/active_zims.txt"
+WRAPPER="/home/${RUN_USER}/wiki/scripts/kiwix-start-from-list.sh"
+
+mkdir -p "$(dirname "$LIST_FILE")"
+printf "%s\n" "${ZIMS[@]}" > "$LIST_FILE"
 
 echo "Creating /etc/systemd/system/kiwix.service"
 sudo tee /etc/systemd/system/kiwix.service > /dev/null <<EOF
@@ -31,7 +38,7 @@ Wants=network-online.target
 Type=simple
 User=${RUN_USER}
 WorkingDirectory=/home/${RUN_USER}
-ExecStart=${KIWIX_BIN} --port=8080 ${ZIM_PATH}
+ExecStart=${WRAPPER} ${LIST_FILE} 8080
 Restart=always
 RestartSec=3
 
@@ -45,5 +52,10 @@ sudo systemctl enable kiwix.service
 sudo systemctl restart kiwix.service
 
 systemctl status kiwix.service --no-pager
+
+echo "Serving ${#ZIMS[@]} ZIM file(s):"
+for zim in "${ZIMS[@]}"; do
+  echo " - $zim"
+done
 
 echo "Done. Access from LAN: http://<PI_IP>:8080"
