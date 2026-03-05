@@ -1,103 +1,117 @@
-PI WIKI KIT (Plug-and-Play)
-===========================
+PI WIKI KIT (Polished Offline Knowledge + Maps)
+===============================================
 
-Goal
-----
-Run offline knowledge on a Raspberry Pi (headless), with:
-- Kiwix server (web search + article browsing)
-- wikiask CLI (search + clean text extraction)
-- auto-start on boot via systemd
-- support for MULTIPLE ZIMs at once (Wikipedia + WikiMed + offline maps)
-- simple web UI to choose active ZIMs
-- one-click profiles in UI (General / Medical / Maps / All)
+Overview
+--------
+This kit gives you a production-style offline stack on laptop or Pi:
 
-What to copy to Pi
-------------------
-1) This folder: wiki-offline-pi-kit
-2) One or more ZIM files, e.g.:
-   - wikipedia_en_all_nopic_2025-12.zim
-   - wikem_en_all_maxi.zim (WikiMed)
-   - openstreetmap_*.zim (offline maps)
+- Kiwix server for ZIM libraries (`:8080`)
+- Enterprise-style content manager dashboard (`:8090`)
+- Offline OSM map UI with town search (`:8091`)
+- CLI search helper (`wiki-ask`)
+- Systemd services (auto-start on boot)
 
-Recommended location on Pi
---------------------------
-- Put ZIMs on USB SSD mounted at: /mnt/wiki-ssd
-- Example paths:
-  /mnt/wiki-ssd/wikipedia_en_all_nopic_2025-12.zim
-  /mnt/wiki-ssd/wikem_en_all_maxi.zim
-  /mnt/wiki-ssd/openstreetmap_region.zim
+Core URLs
+---------
+- Kiwix Reader: `http://<HOST_IP>:8080`
+- Content Manager Dashboard: `http://<HOST_IP>:8090`
+- Offline Map UI: `http://<HOST_IP>:8091`
 
-Quick Start (on Pi)
--------------------
-1) Copy this folder + ZIMs to Pi.
+What’s New in the Dashboard (8090)
+----------------------------------
+- Automatically discovers **all ZIM files** from known roots:
+  - `/mnt/wiki-ssd`
+  - `~/wiki/zim`
+  - `~/.openclaw/workspace/pi-wiki-kit`
+  - `~/.openclaw/workspace/wiki-offline-pi-kit`
+- Optional “extra folder” scan input to add one more source
+- Fast client-side filter bar
+- Select/unselect visible rows
+- One-click profiles (All / General / Medical / Maps)
+- Live stats (count, active, footprint, roots)
 
-2) One-command setup (recommended):
-   chmod +x run_all_on_pi.sh
-   ./run_all_on_pi.sh \
-     /mnt/wiki-ssd/wikipedia_en_all_nopic_2025-12.zim \
-     /mnt/wiki-ssd/wikem_en_all_maxi.zim \
-     /mnt/wiki-ssd/openstreetmap_region.zim
+Quick Start
+-----------
+1) Put your ZIM files in one or more folders (recommended: `/mnt/wiki-ssd`).
 
-   Or auto-detect all ZIMs in a folder:
-   chmod +x run_all_auto_zims.sh
-   ./run_all_auto_zims.sh /mnt/wiki-ssd
+2) Run setup:
 
-3) Open in browser:
-   - Kiwix reader: http://<PI_IP>:8080
-   - ZIM selector UI: http://<PI_IP>:8090
-   - In selector UI, use either:
-     - individual checkboxes, or
-     - one-click profiles (General / Medical / Maps / All)
+```bash
+cd ~/wiki-offline-pi-kit
+chmod +x *.sh *.py
+./run_all_auto_zims.sh /mnt/wiki-ssd
+```
 
-4) Test:
-   wiki-status
-   zim-ui-status
-   wiki-ask "black holes" --top 5 --open 1 --chars 2500
+3) Open:
+- `http://<HOST_IP>:8090` to manage ZIM selection
+- `http://<HOST_IP>:8080` to browse content
+- `http://<HOST_IP>:8091` for offline map + town search
 
-Manual (if needed)
-------------------
-chmod +x install_pi_wiki.sh setup_kiwix_service.sh setup_zim_ui_service.sh setup_sudoers_for_zim_ui.sh
+Manual Setup (if needed)
+------------------------
+```bash
 ./install_pi_wiki.sh
 ./setup_kiwix_service.sh /mnt/wiki-ssd/wikipedia_en_all_nopic_2025-12.zim /mnt/wiki-ssd/wikem_en_all_maxi.zim
 ./setup_zim_ui_service.sh
 ./setup_sudoers_for_zim_ui.sh
+./setup_offline_map_assets.sh
+./setup_offline_map_service.sh
+./download_osm_pmtiles.sh            # default NYC extract
+./setup_offline_place_index.sh       # offline US town/city search index
+```
 
-Useful commands
+Switch to USA map extract
+-------------------------
+```bash
+~/wiki/bin/pmtiles extract https://data.source.coop/protomaps/openstreetmap/v4.pmtiles \
+  ~/wiki/maps/data/usa.pmtiles --bbox=-125,24,-66,50 --maxzoom=10
+```
+
+Then update `~/wiki/maps/config.json`:
+```json
+{
+  "title": "Offline OSM Map (USA Survival)",
+  "pmtiles": "usa.pmtiles",
+  "center": [-98.58, 39.83],
+  "zoom": 4,
+  "minZoom": 2,
+  "maxZoom": 10
+}
+```
+
+And restart map service:
+```bash
+sudo systemctl restart offline-map-ui.service
+```
+
+Useful Commands
 ---------------
-Start server now:
-- wiki-start
+- `wiki-status` – Kiwix status + logs
+- `zim-ui-status` – Dashboard status + logs
+- `map-ui-status` – Offline map service status + logs
+- `wiki-ask "query"` – CLI article search/extract
+- `map-download` – shortcut for `download_osm_pmtiles.sh`
+- `map-places` – rebuild offline US place index
 
-Stop server:
-- wiki-stop
+Where to Get ZIM Files
+----------------------
+- Library: https://library.kiwix.org/
+- Direct index: https://download.kiwix.org/zim/
 
-Server status + logs:
-- wiki-status
-
-ZIM selector service status + logs:
-- zim-ui-status
-
-Ask/search from terminal:
-- wiki-ask "quantum entanglement"
-
-Where to get WikiMed + offline maps ZIMs
------------------------------------------
-- Main catalog: https://library.kiwix.org/
-- Direct download index: https://download.kiwix.org/zim/
-
-Look for:
-- WikiMed (medical Wikipedia): usually under `wikipedia/` as `wikem_*` or similarly named medical ZIM builds
-- OpenStreetMap/offline maps: under `other/` (search page for "openstreetmap")
-
-Tip: pick `*_nopic` versions to save space if needed.
+Suggested:
+- Wikipedia (`wikipedia_*`)
+- WikiMed (`wikem_*` / medical builds)
+- Additional topical ZIMs as needed
 
 Troubleshooting
 ---------------
-- Service logs:
-  journalctl -u kiwix.service -n 100 --no-pager
-  journalctl -u zim-selector.service -n 100 --no-pager
-- If service doesn't start, confirm each ZIM path exists and is readable.
-- If UI cannot restart kiwix: run `./setup_sudoers_for_zim_ui.sh` once.
-- If kiwix fails with port error, check what owns 8080:
+- Kiwix logs:
+  `journalctl -u kiwix.service -n 100 --no-pager`
+- Dashboard logs:
+  `journalctl -u zim-selector.service -n 100 --no-pager`
+- Map logs:
+  `journalctl -u offline-map-ui.service -n 100 --no-pager`
+- If dashboard can’t restart Kiwix:
+  run `./setup_sudoers_for_zim_ui.sh`
+- If port conflict on 8080:
   `ss -ltnp | grep :8080`
-  then stop old process or change port.
-- For performance and durability, use USB SSD for ZIM storage.
