@@ -1,0 +1,12 @@
+{
+  "name": "wiki-offline-pi-kit",
+  "version": "1.0.0",
+  "updated": "2026-03-05",
+  "features": [
+    "unified-dashboard",
+    "always-load-all-zims",
+    "wiki-search-and-parse",
+    "offline-map-ui",
+    "usb-installer"
+  ]
+}

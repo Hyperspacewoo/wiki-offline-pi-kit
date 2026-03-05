@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-from flask import Flask, request, redirect, url_for, render_template_string, jsonify
+from flask import Flask, request, render_template_string, jsonify
 from pathlib import Path
 import subprocess
 import requests
 from bs4 import BeautifulSoup
+from urllib.parse import quote
 
 app = Flask(__name__)
 
@@ -24,7 +25,7 @@ HTML = """
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kiwix Unified Dashboard</title>
   <style>
-    :root { --bg:#0b1020; --panel:#121a30; --panel2:#16223e; --text:#eaf0ff; --muted:#a9b5d1; --border:#2a3b63; --accent:#62a4ff; }
+    :root { --bg:#0b1020; --panel:#121a30; --panel2:#16223e; --text:#eaf0ff; --muted:#a9b5d1; --border:#2a3b63; }
     * { box-sizing: border-box; }
     body { margin:0; font-family: Inter, Segoe UI, Arial, sans-serif; background: radial-gradient(1200px 600px at 10% -20%, #243b70 0, transparent 60%), var(--bg); color:var(--text); }
     .wrap { max-width:1280px; margin:0 auto; padding:20px; }
@@ -37,18 +38,18 @@ HTML = """
     .stat .v { font-size:20px; font-weight:700; }
     .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
     .grow { flex:1; }
-    .btn { border:1px solid var(--border); border-radius:10px; padding:8px 12px; background:#1d2f57; color:#e7edff; cursor:pointer; text-decoration:none; }
+    .btn { border:1px solid var(--border); border-radius:10px; padding:8px 12px; background:#1d2f57; color:#e7edff; cursor:pointer; text-decoration:none; display:inline-block; }
     .btn:hover { filter:brightness(1.08); }
     .btn.primary { background:linear-gradient(180deg,#4f8fff,#3b73d7); border-color:#6aa2ff; }
+    .btn.mapcta { background: linear-gradient(180deg,#26d0a4,#138d6f); border-color:#50e1bd; font-weight:700; box-shadow:0 0 0 2px rgba(80,225,189,.18), 0 6px 20px rgba(19,141,111,.35); }
     input[type=text] { width:100%; padding:9px 11px; border:1px solid var(--border); border-radius:10px; background:#0f1830; color:var(--text); }
-    .split { display:grid; grid-template-columns: 1.2fr 1fr; gap:10px; }
-    .table { max-height:52vh; overflow:auto; border:1px solid var(--border); border-radius:10px; }
+    .table { max-height:56vh; overflow:auto; border:1px solid var(--border); border-radius:10px; }
     table { width:100%; border-collapse:collapse; min-width:860px; }
     th, td { padding:9px; border-bottom:1px solid #24345d; text-align:left; font-size:14px; }
     th { position:sticky; top:0; background:#172549; }
     .badge { font-size:11px; border:1px solid var(--border); border-radius:999px; padding:2px 8px; }
-    iframe { width:100%; height:62vh; border:1px solid var(--border); border-radius:10px; background:#fff; }
-    @media (max-width: 1100px) { .split{grid-template-columns:1fr;} .grid{grid-template-columns:1fr 1fr;} }
+    .split { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    @media (max-width: 1100px) { .grid{grid-template-columns:1fr 1fr;} .split{grid-template-columns:1fr;} }
   </style>
   <script>
     function quickFilter() {
@@ -57,10 +58,9 @@ HTML = """
         tr.style.display = tr.dataset.search.includes(q) ? '' : 'none';
       });
     }
-    function openZim(zimId) {
-      const frame = document.getElementById('readerFrame');
-      frame.src = 'http://{{ host_ip }}:8080/content/' + encodeURIComponent(zimId) + '/';
-      document.getElementById('readerHint').textContent = 'Viewing: ' + zimId;
+    async function rescan() {
+      const extra = (document.getElementById('extraDir').value || '').trim();
+      window.location = '/?scan_dir=' + encodeURIComponent(extra) + '&resync=1';
     }
     async function wikiSearch() {
       const q = (document.getElementById('wikiQ').value || '').trim();
@@ -95,7 +95,7 @@ HTML = """
   <div class="wrap">
     <div class="hero">
       <h1>Kiwix Unified Dashboard</h1>
-      <p class="muted">All discovered ZIM files are always loaded. Pick a file below to open directly in the built-in reader.</p>
+      <p class="muted">All discovered ZIM files are always loaded. Click Open to launch that ZIM in a new browser tab.</p>
       <div class="grid">
         <div class="stat"><div class="k">Discovered ZIM files</div><div class="v">{{ total }}</div></div>
         <div class="stat"><div class="k">Loaded into Kiwix</div><div class="v">{{ loaded_count }}</div></div>
@@ -106,42 +106,32 @@ HTML = """
     </div>
 
     <div class="card">
-      <form method="post" action="/scan">
-        <div class="row">
-          <input class="grow" type="text" name="scan_dir" placeholder="Optional extra folder to include" value="{{ scan_dir }}" />
-          <button class="btn primary" type="submit">Rescan + Sync All ZIMs</button>
-          <a class="btn" href="http://{{ host_ip }}:8091">Offline Map</a>
-        </div>
-      </form>
+      <div class="row">
+        <input id="extraDir" class="grow" type="text" placeholder="Optional extra folder to include" value="{{ scan_dir }}" />
+        <button class="btn primary" onclick="rescan()">Rescan + Sync All ZIMs</button>
+        <a class="btn mapcta" href="http://{{ host_ip }}:8091" target="_blank">🗺️ Open Offline Maps</a>
+        <a class="btn" href="/help" target="_blank">Offline Help</a>
+      </div>
       <p class="muted" style="margin-top:8px;">{{ roots|join(' • ') }}</p>
     </div>
 
-    <div class="split">
-      <div class="card">
-        <div class="row" style="margin-bottom:8px;">
-          <input id="q" class="grow" type="text" placeholder="Filter by title/category/path..." oninput="quickFilter()" />
-        </div>
-        <div class="table">
-          <table>
-            <thead><tr><th>Title</th><th>Category</th><th>Size</th><th>Action</th><th>Path</th></tr></thead>
-            <tbody>
-              {% for z in zims %}
-              <tr data-search="{{ (z.title + ' ' + z.category + ' ' + z.path).lower() }}">
-                <td>{{ z.icon }} <strong>{{ z.title }}</strong><div class="muted">{{ z.filename }}</div></td>
-                <td><span class="badge">{{ z.category }}</span></td>
-                <td>{{ z.size }}</td>
-                <td><button class="btn" type="button" onclick="openZim('{{ z.zim_id }}')">Open</button></td>
-                <td class="muted">{{ z.path }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="row" style="margin-bottom:8px;"><strong>Reader</strong><span id="readerHint" class="muted">Select a ZIM file to open</span></div>
-        <iframe id="readerFrame" src="http://{{ host_ip }}:8080"></iframe>
+    <div class="card">
+      <div class="row" style="margin-bottom:8px;"><input id="q" class="grow" type="text" placeholder="Filter by title/category/path..." oninput="quickFilter()" /></div>
+      <div class="table">
+        <table>
+          <thead><tr><th>Title</th><th>Category</th><th>Size</th><th>Action</th><th>Path</th></tr></thead>
+          <tbody>
+            {% for z in zims %}
+            <tr data-search="{{ (z.title + ' ' + z.category + ' ' + z.path).lower() }}">
+              <td>{{ z.icon }} <strong>{{ z.title }}</strong><div class="muted">{{ z.filename }}</div></td>
+              <td><span class="badge">{{ z.category }}</span></td>
+              <td>{{ z.size }}</td>
+              <td><a class="btn" href="{{ z.open_url }}" target="_blank">Open</a></td>
+              <td class="muted">{{ z.path }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -156,6 +146,19 @@ HTML = """
   </div>
 </body>
 </html>
+"""
+
+HELP_HTML = """
+<!doctype html><html><head><meta charset='utf-8'><title>Offline Help</title><style>body{font-family:Inter,Arial,sans-serif;max-width:900px;margin:30px auto;padding:0 16px;color:#eaf0ff;background:#0b1020}h1,h2{color:#9ec0ff}code,pre{background:#13213f;padding:2px 6px;border-radius:6px}a{color:#7bb2ff}</style></head><body>
+<h1>Offline Knowledge Kit – Help</h1>
+<p>This system is designed to run without internet once installed.</p>
+<h2>URLs</h2>
+<ul><li>Dashboard: <code>:8090</code></li><li>Kiwix reader: <code>:8080</code></li><li>Offline maps: <code>:8091</code></li></ul>
+<h2>USB Distribution</h2>
+<ul><li>Run <code>START_LINUX.sh</code> (Linux), <code>START_WINDOWS.bat</code> (Windows), or <code>START_MAC.command</code> (macOS)</li><li>Use <code>verify_checksums.sh</code> before install</li></ul>
+<h2>Troubleshooting</h2>
+<ul><li>Check service status: <code>wiki-status</code>, <code>zim-ui-status</code>, <code>map-ui-status</code></li><li>Port check: <code>ss -ltnp | grep -E ':8080|:8090|:8091'</code></li></ul>
+</body></html>
 """
 
 
@@ -277,32 +280,22 @@ def wiki_parse(url: str, max_chars: int = 3500):
     soup = BeautifulSoup(r.text, "lxml")
     for tag in soup(["script", "style", "nav", "header", "footer", "aside", "noscript"]):
         tag.decompose()
-    main = (
-        soup.select_one("#mw-content-text")
-        or soup.select_one(".mw-parser-output")
-        or soup.select_one("article")
-        or soup.select_one("#content")
-        or soup.body
-        or soup
-    )
+    main = soup.select_one("#mw-content-text") or soup.select_one(".mw-parser-output") or soup.select_one("article") or soup.select_one("#content") or soup.body or soup
     paras = [p.get_text(" ", strip=True) for p in main.select("p") if p.get_text(" ", strip=True)]
     text = "\n\n".join(paras) if paras else main.get_text("\n", strip=True)
     text = "\n".join(line for line in text.splitlines() if line.strip())
     return text[:max_chars]
 
 
-def build_page(extra_scan_dir: str, sync_msg: str | None = None):
+def build_page(extra_scan_dir: str, do_resync: bool):
     roots = build_roots(extra_scan_dir)
     paths = scan_zims(roots)
-    if sync_msg is None:
-        sync_msg = sync_all_loaded(paths)
+    sync_msg = sync_all_loaded(paths) if do_resync else ""
 
     zims, total_size = [], 0
+    ip = host_ip()
     for p in paths:
-        try:
-            size_raw = p.stat().st_size
-        except Exception:
-            size_raw = 0
+        size_raw = p.stat().st_size if p.exists() else 0
         total_size += size_raw
         category, icon = classify(p.name)
         zims.append({
@@ -313,6 +306,7 @@ def build_page(extra_scan_dir: str, sync_msg: str | None = None):
             "icon": icon,
             "category": category,
             "size": format_size(size_raw),
+            "open_url": f"http://{ip}:8080/content/{quote(p.stem)}/",
         })
 
     return render_template_string(
@@ -324,7 +318,7 @@ def build_page(extra_scan_dir: str, sync_msg: str | None = None):
         roots=[str(r) for r in roots],
         roots_count=len(roots),
         scan_dir=extra_scan_dir,
-        host_ip=host_ip(),
+        host_ip=ip,
         sync_msg=sync_msg,
     )
 
@@ -332,14 +326,13 @@ def build_page(extra_scan_dir: str, sync_msg: str | None = None):
 @app.get("/")
 def index():
     scan_dir = request.args.get("scan_dir", "")
-    return build_page(scan_dir)
+    do_resync = request.args.get("resync", "1") == "1"
+    return build_page(scan_dir, do_resync)
 
 
-@app.post("/scan")
-def scan():
-    scan_dir = (request.form.get("scan_dir") or "").strip()
-    msg = build_page(scan_dir)
-    return msg
+@app.get("/help")
+def help_page():
+    return HELP_HTML
 
 
 @app.get("/api/wiki/search")

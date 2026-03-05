@@ -1,0 +1,14 @@
+Offline Knowledge Kit
+=====================
+
+1) Verify integrity (recommended):
+   ./verify_checksums.sh
+
+2) Start install:
+   ./START_LINUX.sh
+
+3) Open dashboard:
+   http://<HOST_IP>:8090
+
+The dashboard auto-loads all discovered ZIM files.
+Use Open to launch selected ZIM in a new tab.
