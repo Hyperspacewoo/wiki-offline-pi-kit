@@ -13,7 +13,6 @@ KIWIX_BASE = "http://127.0.0.1:8080"
 DEFAULT_ROOTS = [
     Path("/mnt/wiki-ssd"),
     Path.home() / "wiki/zim",
-    Path.home() / ".openclaw/workspace/pi-wiki-kit",
     Path.home() / ".openclaw/workspace/wiki-offline-pi-kit",
 ]
 
@@ -142,6 +141,14 @@ HTML = """
         <div style="border:1px solid var(--border);border-radius:10px;max-height:240px;overflow:auto;padding:6px;" id="wikiResults"><div class="muted">Run a query to see results.</div></div>
         <div style="border:1px solid var(--border);border-radius:10px;max-height:240px;overflow:auto;padding:10px;white-space:pre-wrap;" id="wikiParsed"></div>
       </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:0 0 8px;">CLI Quick Query</h3>
+      <p class="muted">In terminal, run these exact commands:</p>
+      <pre style="margin:0;white-space:pre-wrap;border:1px solid var(--border);border-radius:10px;padding:10px;background:#0f1830;color:#dbe7ff;">source ~/wiki/.venv/bin/activate
+wiki-ask "black holes"
+wiki-ask "water purification" --top 5 --open 1 --chars 2500</pre>
     </div>
   </div>
 </body>

@@ -20,7 +20,6 @@ Unified Flow
 Default discovery roots:
 - `/mnt/wiki-ssd`
 - `~/wiki/zim`
-- `~/.openclaw/workspace/pi-wiki-kit`
 - `~/.openclaw/workspace/wiki-offline-pi-kit`
 - + optional extra directory entered in dashboard
 
@@ -64,6 +63,10 @@ Maps
 - Offline maps run at `:8091`.
 - Dashboard has a prominent **Open Offline Maps** button.
 
-Legacy note
------------
-`pi-wiki-kit` is optional legacy/simple mode. `wiki-offline-pi-kit` is the primary modern stack and already includes terminal parsing + UI.
+CLI Query (simple)
+------------------
+```bash
+source ~/wiki/.venv/bin/activate
+wiki-ask "black holes"
+wiki-ask "water purification" --top 5 --open 1 --chars 2500
+```
