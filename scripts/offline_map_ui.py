@@ -35,7 +35,7 @@ INDEX_HTML = """<!doctype html>
     .panel { position: absolute; z-index: 3; top: 10px; left: 10px; background: rgba(255,255,255,0.96); border-radius: 10px; padding: 10px 12px; font-family: sans-serif; width: 360px; box-shadow: 0 2px 12px rgba(0,0,0,.15); }
     .small { font-size: 12px; color: #444; }
     .search { margin-top: 8px; }
-    .search input { width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #bbb; }
+    .search input, .search select { width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #bbb; }
     .results { margin-top: 6px; max-height: 220px; overflow: auto; border: 1px solid #ddd; border-radius: 8px; background: #fff; }
     .result { padding: 8px; border-bottom: 1px solid #eee; cursor: pointer; }
     .result:hover { background: #f4f8ff; }
@@ -47,6 +47,9 @@ INDEX_HTML = """<!doctype html>
   <div class=\"panel\">
     <div><strong id=\"title\">Offgrid Intel Kit Map</strong></div>
     <div class=\"small\">Data: <span id=\"pmtilesName\"></span></div>
+    <div class=\"search\">
+      <select id=\"datasetSelect\"></select>
+    </div>
     <div class=\"search\">
       <input id=\"searchInput\" placeholder=\"Search town/city (e.g., Bozeman, MT)\" />
       <div id=\"results\" class=\"results hidden\"></div>
@@ -119,6 +122,17 @@ INDEX_HTML = """<!doctype html>
       const cfg = await fetch('/config').then(r => r.json());
       document.getElementById('title').textContent = cfg.title || 'Offgrid Intel Kit Map';
       document.getElementById('pmtilesName').textContent = cfg.pmtiles;
+
+      try {
+        const datasets = await fetch('/datasets').then(r => r.json());
+        const sel = document.getElementById('datasetSelect');
+        sel.innerHTML = datasets.map(d => `<option value="${d}" ${d===cfg.pmtiles?'selected':''}>Map: ${d}</option>`).join('');
+        sel.onchange = async () => {
+          const name = sel.value;
+          await fetch('/set_dataset', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({pmtiles:name})});
+          location.reload();
+        };
+      } catch (_) {}
 
       const protocol = new pmtiles.Protocol();
       maplibregl.addProtocol('pmtiles', protocol.tile);
@@ -239,6 +253,11 @@ def load_config():
     return data
 
 
+def list_datasets():
+    ensure_layout()
+    return sorted([p.name for p in DATA_DIR.glob("*.pmtiles")])
+
+
 @app.get("/")
 def index():
     ensure_layout()
@@ -248,6 +267,25 @@ def index():
 @app.get("/config")
 def config():
     return jsonify(load_config())
+
+
+@app.get("/datasets")
+def datasets():
+    return jsonify(list_datasets())
+
+
+@app.post("/set_dataset")
+def set_dataset():
+    payload = request.get_json(silent=True) or {}
+    pm = (payload.get("pmtiles") or "").strip()
+    if not pm or "/" in pm or ".." in pm or not pm.endswith('.pmtiles'):
+        return jsonify({"ok": False, "error": "invalid dataset"}), 400
+    if not (DATA_DIR / pm).exists():
+        return jsonify({"ok": False, "error": "dataset not found"}), 404
+    cfg = load_config()
+    cfg["pmtiles"] = pm
+    CONFIG_FILE.write_text(json.dumps(cfg, indent=2) + "\n")
+    return jsonify({"ok": True, "pmtiles": pm})
 
 
 @app.get("/search")

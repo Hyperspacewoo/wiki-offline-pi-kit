@@ -16,10 +16,16 @@ Offline-first knowledge + maps bundle with Kiwix dashboard and local translation
 ./START_LINUX.sh
 ```
 
-## Verify Bundle
+Then open:
+- Dashboard: `http://<HOST_IP>:8090`
+- First-run wizard: `http://<HOST_IP>:8090/setup`
+
+## Maintenance (one-command)
 
 ```bash
+./scripts/doctor.sh
 ./scripts/verify_checksums.sh
+./scripts/sync_external_drive.sh
 ```
 
 ## Main URLs

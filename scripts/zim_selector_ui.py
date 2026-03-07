@@ -5,6 +5,7 @@ import subprocess
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import quote
+import shlex
 
 app = Flask(__name__)
 
@@ -218,6 +219,22 @@ HTML = """
       window.location = '/?scan_dir=' + encodeURIComponent(extra) + '&resync=1';
     }
 
+    async function runAdminAction(action) {
+      const out = document.getElementById('adminOut');
+      if (out) out.textContent = 'Running ' + action + '...';
+      try {
+        const r = await fetch('/api/admin/action', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({action})
+        });
+        const data = await r.json();
+        if (out) out.textContent = (data.ok ? '✅ ' : '⚠️ ') + (data.message || '') + (data.output ? '\n\n' + data.output : '');
+      } catch (e) {
+        if (out) out.textContent = 'Failed: ' + e;
+      }
+    }
+
     async function wikiSearch() {
       const q = (document.getElementById('wikiQ').value || '').trim();
       const list = document.getElementById('wikiResults');
@@ -303,7 +320,7 @@ HTML = """
       <div class="row" style="justify-content:space-between;align-items:flex-start;">
         <div>
           <h1>Offgrid Intel Kit Dashboard</h1>
-          <p class="muted">Midnight Tech Command Center — offline-first knowledge + human translation hub.</p>
+          <p class="muted">Paid-ready offline console — Knowledge, Maps, Translator, Ebooks.</p>
         </div>
         <div class="pill"><span class="status-dot {{ 'warn' if translator_offline_warning else '' }}"></span>{{ translator_status }}</div>
       </div>
@@ -318,11 +335,16 @@ HTML = """
 
     <div class="card">
       <div class="row">
+        <a class="btn primary" href="/" style="font-weight:700;">📘 Knowledge</a>
+        <a class="btn mapcta" href="http://{{ host_ip }}:8091" target="_blank">🗺️ Maps</a>
+        <a class="btn" href="#translator">🈯 Translator</a>
+        <a class="btn" href="/ebooks" target="_blank">📚 Ebooks</a>
+        <a class="btn" href="/setup" target="_blank">🧭 First-Run Wizard</a>
+        <a class="btn" href="/help" target="_blank">Offline Help</a>
+      </div>
+      <div class="row" style="margin-top:8px;">
         <input id="extraDir" class="grow" type="text" placeholder="Optional extra folder to include" value="{{ scan_dir }}" />
         <button class="btn primary" onclick="rescan()">Rescan + Sync All ZIMs</button>
-        <a class="btn" href="/ebooks" target="_blank">📚 Open Ebooks</a>
-        <a class="btn mapcta" href="http://{{ host_ip }}:8091" target="_blank">🗺️ Open Offline Maps</a>
-        <a class="btn" href="/help" target="_blank">Offline Help</a>
       </div>
       <p class="muted" style="margin-top:8px;">{{ roots|join(' • ') }}</p>
     </div>
@@ -383,6 +405,18 @@ HTML = """
 
       <div>
         <div class="card">
+          <h3 style="margin:0 0 8px;">System Health & Maintenance</h3>
+          <p class="muted" style="margin:0 0 8px;">{{ health_summary }}</p>
+          <div class="row">
+            <button class="btn" onclick="runAdminAction('doctor')">Run Doctor</button>
+            <button class="btn" onclick="runAdminAction('verify')">Verify Integrity</button>
+            <button class="btn" onclick="runAdminAction('backup_usb')">Backup to USB</button>
+            <button class="btn" onclick="runAdminAction('sync_usb')">Sync from USB</button>
+          </div>
+          <pre id="adminOut" style="margin-top:8px;max-height:180px;overflow:auto;">Ready.</pre>
+        </div>
+
+        <div class="card" id="translator">
           <h3 style="margin:0 0 8px;">Translator (Offline)</h3>
           <p class="muted" style="margin:0 0 10px;">One clean flow for both conversation and normal text translation.</p>
           <div class="row">
@@ -454,6 +488,36 @@ a{color:#7bb2ff}
 <div class='card'>
   __ROWS_HTML__
 </div>
+</body></html>
+"""
+
+SETUP_HTML = """
+<!doctype html><html><head><meta charset='utf-8'><title>First-Run Wizard</title>
+<style>
+body{font-family:Inter,Arial,sans-serif;max-width:980px;margin:24px auto;padding:0 16px;color:#eaf0ff;background:#0b1020}
+h1{color:#9ec0ff}.card{border:1px solid #2a3b63;background:#121a2b;border-radius:12px;padding:12px;margin-bottom:12px}
+.muted{color:#a9b5d1}.btn{border:1px solid #2a3b63;border-radius:10px;padding:8px 12px;background:#1d2f57;color:#e7edff;cursor:pointer}
+pre{border:1px solid #2a3b63;background:#0f1830;border-radius:10px;padding:10px;white-space:pre-wrap}
+</style>
+<script>
+async function runStep(action){
+  const out=document.getElementById('out');
+  out.textContent='Running '+action+'...';
+  const r=await fetch('/api/admin/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action})});
+  const d=await r.json();
+  out.textContent=(d.ok?'✅ ':'⚠️ ')+(d.message||'')+'\n\n'+(d.output||'');
+}
+</script>
+</head><body>
+<h1>First-Run Wizard</h1>
+<div class='card'>
+  <p class='muted'>Run these in order for a paid-ready setup.</p>
+  <button class='btn' onclick="runStep('setup_dirs')">1) Create Required Folders</button>
+  <button class='btn' onclick="runStep('doctor')">2) Run System Doctor</button>
+  <button class='btn' onclick="runStep('verify')">3) Verify Integrity</button>
+  <button class='btn' onclick="runStep('sync_usb')">4) Import from USB (if attached)</button>
+</div>
+<div class='card'><pre id='out'>Ready.</pre></div>
 </body></html>
 """
 
@@ -749,6 +813,49 @@ def _is_under_roots(path: Path, roots):
     return False
 
 
+def health_summary_text():
+    statuses = []
+    for svc in ["kiwix.service", "zim-selector.service", "offline-map-ui.service"]:
+        try:
+            subprocess.check_call(["systemctl", "is-active", "--quiet", svc])
+            statuses.append(f"{svc.split('.')[0]}:ok")
+        except Exception:
+            statuses.append(f"{svc.split('.')[0]}:check")
+    if Path.home().joinpath("wiki/ebooks").exists():
+        statuses.append("ebooks:ok")
+    else:
+        statuses.append("ebooks:missing")
+    return " • ".join(statuses)
+
+
+def run_admin_action(action: str):
+    root = Path.home() / ".openclaw/workspace/wiki-offline-pi-kit"
+    scripts = root / "scripts"
+
+    def run(cmd):
+        out = subprocess.check_output(cmd, cwd=str(root), stderr=subprocess.STDOUT, text=True)
+        return out[-4000:]
+
+    if action == "doctor":
+        return True, "Doctor completed", run(["bash", str(scripts / "doctor.sh")])
+    if action == "verify":
+        return True, "Integrity check completed", run(["bash", str(scripts / "verify_checksums.sh")])
+    if action == "backup_usb":
+        return True, "Backup sync completed", run(["bash", str(scripts / "sync_external_drive.sh")])
+    if action == "sync_usb":
+        usb = "/media/void/94AA7041AA7021C2/OfflineKnowledgeKit/wiki-offline-pi-kit/zims"
+        if not Path(usb).exists():
+            return False, "USB zims path not found", usb
+        return True, "Imported ZIMs from USB path", run(["bash", str(scripts / "import_zims_from_usb.sh"), usb])
+    if action == "setup_dirs":
+        created = []
+        for p in [Path.home()/"wiki/ebooks", root/"ebooks", Path.home()/"wiki/zim"]:
+            p.mkdir(parents=True, exist_ok=True)
+            created.append(str(p))
+        return True, "Directories ready", "\n".join(created)
+    return False, "Unknown action", action
+
+
 def build_page(extra_scan_dir: str, do_resync: bool):
     roots = build_roots(extra_scan_dir)
     paths = scan_zims(roots)
@@ -773,6 +880,7 @@ def build_page(extra_scan_dir: str, do_resync: bool):
         })
 
     status, warning = translator_status_text()
+    health_summary = health_summary_text()
 
     return render_template_string(
         HTML,
@@ -788,6 +896,7 @@ def build_page(extra_scan_dir: str, do_resync: bool):
         language_options=LANGUAGE_OPTIONS,
         translator_status=status,
         translator_offline_warning=warning,
+        health_summary=health_summary,
     )
 
 
@@ -801,6 +910,26 @@ def index():
 @app.get("/help")
 def help_page():
     return HELP_HTML
+
+
+@app.get("/setup")
+def setup_page():
+    return SETUP_HTML
+
+
+@app.get("/health")
+def health_page():
+    summary = health_summary_text()
+    return jsonify({"summary": summary})
+
+
+@app.post("/api/admin/action")
+def api_admin_action():
+    payload = request.get_json(silent=True) or {}
+    action = (payload.get("action") or "").strip()
+    ok, message, output = run_admin_action(action)
+    code = 200 if ok else 400
+    return jsonify({"ok": ok, "message": message, "output": output}), code
 
 
 @app.get("/ebooks")
