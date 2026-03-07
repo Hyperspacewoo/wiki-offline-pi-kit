@@ -2,4 +2,5 @@
 echo This installer is Linux-first (systemd + apt + kiwix-tools).
 echo For Windows usage, run in WSL Ubuntu and execute:
 echo   bash ./INSTALL_OFFLINE_KNOWLEDGE.sh
+echo Note: scripts are now under ./scripts and docs under ./docs
 pause

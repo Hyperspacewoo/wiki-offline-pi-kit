@@ -13,12 +13,12 @@ CONFIG_FILE = MAP_ROOT / "config.json"
 PLACES_FILE = DATA_DIR / "us_places.tsv"
 
 DEFAULT_CONFIG = {
-    "title": "Offline OSM Map",
+    "title": "Offgrid Intel Kit Map",
     "pmtiles": "usa.pmtiles",
     "center": [-98.58, 39.83],
     "zoom": 4,
     "minZoom": 2,
-    "maxZoom": 10
+    "maxZoom": 15
 }
 
 PLACES = []
@@ -28,7 +28,7 @@ INDEX_HTML = """<!doctype html>
 <head>
   <meta charset=\"utf-8\" />
   <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\" />
-  <title>Offline OSM Map</title>
+  <title>Offgrid Intel Kit Map</title>
   <link rel=\"stylesheet\" href=\"/static/maplibre-gl.css\" />
   <style>
     html, body, #map { margin:0; padding:0; width:100%; height:100%; }
@@ -45,7 +45,7 @@ INDEX_HTML = """<!doctype html>
 </head>
 <body>
   <div class=\"panel\">
-    <div><strong id=\"title\">Offline OSM Map</strong></div>
+    <div><strong id=\"title\">Offgrid Intel Kit Map</strong></div>
     <div class=\"small\">Data: <span id=\"pmtilesName\"></span></div>
     <div class=\"search\">
       <input id=\"searchInput\" placeholder=\"Search town/city (e.g., Bozeman, MT)\" />
@@ -102,7 +102,7 @@ INDEX_HTML = """<!doctype html>
         d.className = 'result';
         d.textContent = `${it.name}${it.admin1 ? ', ' + it.admin1 : ''} (pop ${it.population || 0})`;
         d.onclick = () => {
-          map.flyTo({ center: [it.lon, it.lat], zoom: 10 });
+          map.flyTo({ center: [it.lon, it.lat], zoom: 13 });
           box.classList.add('hidden');
           const p = new maplibregl.Popup({ closeOnClick: true })
             .setLngLat([it.lon, it.lat])
@@ -117,7 +117,7 @@ INDEX_HTML = """<!doctype html>
 
     async function boot() {
       const cfg = await fetch('/config').then(r => r.json());
-      document.getElementById('title').textContent = cfg.title || 'Offline OSM Map';
+      document.getElementById('title').textContent = cfg.title || 'Offgrid Intel Kit Map';
       document.getElementById('pmtilesName').textContent = cfg.pmtiles;
 
       const protocol = new pmtiles.Protocol();
@@ -137,14 +137,27 @@ INDEX_HTML = """<!doctype html>
             { id: 'bg', type: 'background', paint: { 'background-color': '#f2efe9' } },
             { id: 'water', type: 'fill', source: 'protomaps', 'source-layer': 'water', paint: {'fill-color': '#9ecae1'} },
             { id: 'landuse', type: 'fill', source: 'protomaps', 'source-layer': 'landuse', paint: {'fill-color': '#d9eac8', 'fill-opacity': 0.5} },
-            { id: 'roads', type: 'line', source: 'protomaps', 'source-layer': 'roads', paint: {'line-color': '#ffffff', 'line-width': ['interpolate', ['linear'], ['zoom'], 4, 0.3, 10, 2]} },
+            { id: 'roads', type: 'line', source: 'protomaps', 'source-layer': 'roads', paint: {'line-color': '#ffffff', 'line-width': ['interpolate', ['linear'], ['zoom'], 4, 0.3, 10, 2, 13, 3.2, 15, 4.4]} },
+            {
+              id: 'trails',
+              type: 'line',
+              source: 'protomaps',
+              'source-layer': 'roads',
+              filter: ['any', ['==', ['get', 'class'], 'path'], ['==', ['get', 'kind'], 'path']],
+              paint: {
+                'line-color': '#9a6b3f',
+                'line-width': ['interpolate', ['linear'], ['zoom'], 10, 0.5, 12, 1.2, 14, 2.3, 15, 3],
+                'line-dasharray': [1.2, 1.2],
+                'line-opacity': 0.9
+              }
+            },
             { id: 'boundaries', type: 'line', source: 'protomaps', 'source-layer': 'boundaries', paint: {'line-color': '#888', 'line-dasharray': [2,2], 'line-width': 1} }
           ]
         },
         center: cfg.center || [-98.58, 39.83],
         zoom: cfg.zoom || 4,
         minZoom: cfg.minZoom || 2,
-        maxZoom: cfg.maxZoom || 10,
+        maxZoom: cfg.maxZoom || 15,
         hash: true
       });
 
@@ -218,6 +231,11 @@ def load_config():
         data = dict(DEFAULT_CONFIG)
     for k, v in DEFAULT_CONFIG.items():
         data.setdefault(k, v)
+    # Keep older configs compatible but allow deeper zoom for trail-level detail.
+    try:
+        data["maxZoom"] = max(15, int(data.get("maxZoom", 15)))
+    except Exception:
+        data["maxZoom"] = 15
     return data
 
 

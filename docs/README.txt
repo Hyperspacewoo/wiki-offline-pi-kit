@@ -42,16 +42,16 @@ USB Distribution Files
 - `START_LINUX.sh` – launcher for Linux
 - `START_MAC.command` – launcher for macOS terminal flow
 - `START_WINDOWS.bat` – Windows notice (use WSL Ubuntu)
-- `VERSION.json` – release/version metadata
-- `build_checksums.sh` / `verify_checksums.sh` – integrity workflow
-- `import_zims_from_usb.sh` – copy ZIMs from removable media
-- `export_bundle_to_usb.sh` – export this kit to another USB
-- `check_ports_and_services.sh` – quick health check
+- `config/VERSION.json` – release/version metadata
+- `scripts/build_checksums.sh` / `scripts/verify_checksums.sh` – integrity workflow
+- `scripts/import_zims_from_usb.sh` – copy ZIMs from removable media
+- `scripts/export_bundle_to_usb.sh` – export this kit to another USB
+- `scripts/check_ports_and_services.sh` – quick health check
 
 Install (Linux)
 ---------------
 ```bash
-chmod +x *.sh *.py
+chmod +x ./*.sh ./scripts/*.sh ./scripts/*.py
 ./INSTALL_OFFLINE_KNOWLEDGE.sh
 ```
 
@@ -60,8 +60,8 @@ Then open dashboard and click **Rescan + Sync All ZIMs**.
 Create checksums before sharing
 -------------------------------
 ```bash
-./build_checksums.sh
-./verify_checksums.sh
+./scripts/build_checksums.sh
+./scripts/verify_checksums.sh
 ```
 
 Maps

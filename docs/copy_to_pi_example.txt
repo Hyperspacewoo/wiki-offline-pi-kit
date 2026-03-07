@@ -9,6 +9,6 @@ scp /home/void/wiki/zim/wikipedia_en_all_nopic_2025-12.zim pi@<PI_IP>:/mnt/wiki-
 Then SSH into Pi:
 ssh pi@<PI_IP>
 cd ~/wiki-offline-pi-kit
-chmod +x install_pi_wiki.sh setup_kiwix_service.sh
-./install_pi_wiki.sh
-./setup_kiwix_service.sh /mnt/wiki-ssd/wikipedia_en_all_nopic_2025-12.zim
+chmod +x ./*.sh ./scripts/*.sh ./scripts/*.py
+./scripts/install_pi_wiki.sh
+./scripts/setup_kiwix_service.sh /mnt/wiki-ssd/wikipedia_en_all_nopic_2025-12.zim

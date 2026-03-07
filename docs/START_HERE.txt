@@ -1,8 +1,8 @@
-Offline Knowledge Kit
-=====================
+Offgrid Intel Kit
+=================
 
 1) Verify integrity (recommended):
-   ./verify_checksums.sh
+   ./scripts/verify_checksums.sh
 
 2) Start install:
    ./START_LINUX.sh
