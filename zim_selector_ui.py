@@ -278,30 +278,6 @@ HTML = """
       }
     }
 
-    async function translateTurn(side) {
-      const sourceSelect = document.getElementById('trSource');
-      const targetSelect = document.getElementById('trTarget');
-      const from = side === 'a' ? sourceSelect.value : targetSelect.value;
-      const to = side === 'a' ? targetSelect.value : sourceSelect.value;
-      const inEl = document.getElementById(side === 'a' ? 'turnA' : 'turnB');
-      const outEl = document.getElementById(side === 'a' ? 'turnB' : 'turnA');
-      const text = (inEl.value || '').trim();
-      if (!text) return;
-      const res = await fetch('/api/translate', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({text, source: from, target: to})
-      });
-      const data = await res.json();
-      if (!res.ok || data.error) {
-        alert(data.error || 'Turn translation failed');
-        return;
-      }
-      outEl.value = data.translation || '';
-      const status = document.getElementById('turnStatus');
-      status.textContent = `Last turn: ${from} → ${to} (${data.engine || 'offline'})`;
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
       applyFilters();
       const filterInput = document.getElementById('q');
@@ -399,8 +375,8 @@ HTML = """
 
       <div>
         <div class="card">
-          <h3 style="margin:0 0 8px;">Human Translator (Offline)</h3>
-          <p class="muted" style="margin:0 0 10px;">For two people speaking different languages. Local translation only.</p>
+          <h3 style="margin:0 0 8px;">Translator (Offline)</h3>
+          <p class="muted" style="margin:0 0 10px;">One clean flow for both conversation and normal text translation.</p>
           <div class="row">
             <select id="trSource">
               {% for c in language_options %}
@@ -414,25 +390,11 @@ HTML = """
               {% endfor %}
             </select>
           </div>
-          <div class="translator-grid" style="margin-top:10px;">
-            <div>
-              <div class="muted" style="margin-bottom:4px;">Speaker A</div>
-              <textarea id="turnA" placeholder="Type what Speaker A says..."></textarea>
-              <button class="btn primary" style="margin-top:6px;" onclick="translateTurn('a')">A → B</button>
-            </div>
-            <div>
-              <div class="muted" style="margin-bottom:4px;">Speaker B</div>
-              <textarea id="turnB" placeholder="Translated output appears here (or type reply to translate back)..."></textarea>
-              <button class="btn primary" style="margin-top:6px;" onclick="translateTurn('b')">B → A</button>
-            </div>
+          <textarea id="trInput" style="margin-top:10px;" placeholder="Type what one person says (or paste any text)..."></textarea>
+          <div class="row" style="margin-top:6px;">
+            <button class="btn primary" onclick="translateText()">Translate</button>
+            <button class="btn" onclick="document.getElementById('trInput').value = document.getElementById('trOutput').value || ''">Use Output as Next Input</button>
           </div>
-          <p id="turnStatus" class="muted" style="margin-top:8px;">Ready.</p>
-        </div>
-
-        <div class="card">
-          <h3 style="margin:0 0 8px;">Text Translation Utility</h3>
-          <textarea id="trInput" placeholder="Paste any text to translate..."></textarea>
-          <button class="btn primary" style="margin-top:6px;" onclick="translateText()">Translate Text</button>
           <textarea id="trOutput" style="margin-top:8px;" placeholder="Translation output..." readonly></textarea>
           <p id="trMeta" class="muted" style="margin:8px 0 0;"></p>
         </div>
