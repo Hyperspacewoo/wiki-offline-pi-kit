@@ -1,5 +1,5 @@
-PI WIKI KIT (USB-first Offline Archive)
-=======================================
+OFFGRID INTEL KIT (USB-first Offline Archive)
+=============================================
 
 Purpose
 -------
@@ -20,8 +20,14 @@ Unified Flow
 Default discovery roots:
 - `/mnt/wiki-ssd`
 - `~/wiki/zim`
+- `~/.openclaw/workspace/wiki-offline-pi-kit/zims`  (canonical local bundle folder)
 - `~/.openclaw/workspace/wiki-offline-pi-kit`
 - + optional extra directory entered in dashboard
+
+Project structure note
+----------------------
+- Keep all bundled ZIM files in `zims/`.
+- Top-level project directory is for scripts/services/docs only.
 
 Wiki Search
 -----------
