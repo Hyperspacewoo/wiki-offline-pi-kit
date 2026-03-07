@@ -337,11 +337,13 @@ HTML = """
 
     <div class="card">
       <div class="row">
-        <a class="btn primary" href="/" style="font-weight:700;">📘 Knowledge Library</a>
-        <a class="btn mapcta" href="http://{{ host_ip }}:8091" target="_blank">🗺️ Atlas</a>
+        <a class="btn primary" href="/" style="font-weight:700;">📘 Knowledge</a>
+        <a class="btn mapcta" href="http://{{ host_ip }}:8091" target="_blank">🗺️ Maps</a>
         <a class="btn" href="#translator">🈯 Translate</a>
-        <a class="btn" href="/ebooks" target="_blank">📚 Survival Library</a>
-        <a class="btn" href="/setup" target="_blank">✨ Personalize</a>
+        <a class="btn" href="/ebooks" target="_blank">📚 Library</a>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <a class="btn" href="/morse" target="_blank">📡 Morse</a>
         <a class="btn" href="/help" target="_blank">Support</a>
       </div>
       <div class="row" style="margin-top:8px;">
@@ -349,6 +351,15 @@ HTML = """
         <button class="btn primary" onclick="rescan()">Rescan + Sync All ZIMs</button>
       </div>
       <p class="muted" style="margin-top:8px;">{{ roots|join(' • ') }}</p>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <button class="btn" onclick="document.getElementById('wikiQ').value='water purification'; wikiSearch();">💧 Water Purification</button>
+        <button class="btn" onclick="document.getElementById('wikiQ').value='first aid'; wikiSearch();">🩹 First Aid</button>
+        <button class="btn" onclick="document.getElementById('wikiQ').value='shelter building'; wikiSearch();">🏕️ Shelter</button>
+        <button class="btn" onclick="document.getElementById('trInput').value='I need medical help'; document.getElementById('trSource').value='en'; document.getElementById('trTarget').value='es';">🈺 Emergency Phrase</button>
+      </div>
     </div>
 
     <div class="main-layout">
@@ -407,15 +418,17 @@ HTML = """
 
       <div>
         <div class="card">
-          <h3 style="margin:0 0 8px;">System Confidence</h3>
-          <p class="muted" style="margin:0 0 8px;">{{ health_summary }}</p>
-          <div class="row">
-            <button class="btn" onclick="runAdminAction('doctor')">Health Check</button>
-            <button class="btn" onclick="runAdminAction('verify')">Trust Verify</button>
-            <button class="btn" onclick="runAdminAction('backup_usb')">Backup</button>
-            <button class="btn" onclick="runAdminAction('sync_usb')">Import USB</button>
-          </div>
-          <pre id="adminOut" style="margin-top:8px;max-height:180px;overflow:auto;">Ready for action.</pre>
+          <details>
+            <summary style="cursor:pointer;font-weight:600;">Advanced System</summary>
+            <p class="muted" style="margin:8px 0 8px;">{{ health_summary }}</p>
+            <div class="row">
+              <button class="btn" onclick="runAdminAction('doctor')">Health Check</button>
+              <button class="btn" onclick="runAdminAction('verify')">Trust Verify</button>
+              <button class="btn" onclick="runAdminAction('backup_usb')">Backup</button>
+              <button class="btn" onclick="runAdminAction('sync_usb')">Import USB</button>
+            </div>
+            <pre id="adminOut" style="margin-top:8px;max-height:180px;overflow:auto;">Ready.</pre>
+          </details>
         </div>
 
         <div class="card" id="translator">
@@ -520,6 +533,66 @@ async function runStep(action){
   <button class='btn' onclick="runStep('sync_usb')">4) Import My USB Content</button>
 </div>
 <div class='card'><pre id='out'>Ready. Press step 1.</pre></div>
+</body></html>
+"""
+
+MORSE_HTML = """
+<!doctype html><html><head><meta charset='utf-8'><title>Morse Tool</title>
+<style>
+body{font-family:Inter,Arial,sans-serif;max-width:900px;margin:24px auto;padding:0 16px;color:#eaf0ff;background:#0b1020}
+h1{color:#9ec0ff}.card{border:1px solid #2a3b63;background:#121a2b;border-radius:12px;padding:12px;margin-bottom:12px}
+textarea,input{width:100%;padding:9px;border-radius:10px;border:1px solid #2a3b63;background:#0f1830;color:#eaf0ff}
+.btn{border:1px solid #2a3b63;border-radius:10px;padding:8px 12px;background:#1d2f57;color:#e7edff;cursor:pointer}
+.flash{height:30px;border-radius:8px;background:#18284e;margin-top:8px}
+</style>
+<script>
+const MAP = {
+  'A':'.-','B':'-...','C':'-.-.','D':'-..','E':'.','F':'..-.','G':'--.','H':'....','I':'..','J':'.---','K':'-.-','L':'.-..','M':'--','N':'-.','O':'---','P':'.--.','Q':'--.-','R':'.-.','S':'...','T':'-','U':'..-','V':'...-','W':'.--','X':'-..-','Y':'-.--','Z':'--..',
+  '0':'-----','1':'.----','2':'..---','3':'...--','4':'....-','5':'.....','6':'-....','7':'--...','8':'---..','9':'----.',' ':'/'
+};
+const REV = Object.fromEntries(Object.entries(MAP).map(([k,v])=>[v,k]));
+function enc(){
+  const t=(document.getElementById('plain').value||'').toUpperCase();
+  document.getElementById('morse').value=[...t].map(ch=>MAP[ch]||'').filter(Boolean).join(' ');
+}
+function dec(){
+  const m=(document.getElementById('morse').value||'').trim().split(/\\s+/);
+  document.getElementById('plain').value=m.map(x=>REV[x]||'?').join('').replaceAll('/',' ');
+}
+async function play(){
+  const txt=(document.getElementById('morse').value||'').trim();
+  if(!txt) return;
+  const ctx=new (window.AudioContext||window.webkitAudioContext)();
+  const flash=document.getElementById('flash');
+  const dot=0.08;
+  const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
+  for(const ch of txt){
+    if(ch==='.'||ch==='-'){
+      const dur=(ch==='.')?dot:dot*3;
+      const o=ctx.createOscillator(); const g=ctx.createGain();
+      o.type='sine'; o.frequency.value=700; o.connect(g); g.connect(ctx.destination);
+      g.gain.value=0.2; o.start(); flash.style.background='#7bb2ff';
+      await sleep(dur*1000); o.stop(); flash.style.background='#18284e';
+      await sleep(dot*1000);
+    } else if(ch===' ') {
+      await sleep(dot*2*1000);
+    } else if(ch==='/') {
+      await sleep(dot*6*1000);
+    }
+  }
+}
+</script></head><body>
+<h1>Morse Tool</h1>
+<div class='card'>
+  <textarea id='plain' placeholder='Plain text'></textarea>
+  <div style='margin-top:8px;display:flex;gap:8px;flex-wrap:wrap'>
+    <button class='btn' onclick='enc()'>Encode → Morse</button>
+    <button class='btn' onclick='dec()'>Decode → Text</button>
+    <button class='btn' onclick='play()'>Play Signal</button>
+  </div>
+  <textarea id='morse' style='margin-top:8px' placeholder='Morse code'></textarea>
+  <div id='flash' class='flash'></div>
+</div>
 </body></html>
 """
 
@@ -927,6 +1000,11 @@ def help_page():
 @app.get("/setup")
 def setup_page():
     return SETUP_HTML
+
+
+@app.get("/morse")
+def morse_page():
+    return MORSE_HTML
 
 
 @app.get("/health")
