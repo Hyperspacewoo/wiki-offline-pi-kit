@@ -31,7 +31,7 @@ HTML = """
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Offgrid Intel Kit Dashboard</title>
+  <title>Offgrid Intel Kit • Luxury Offline Console</title>
   <style>
     :root {
       --bg:#0b1020;
@@ -56,13 +56,14 @@ HTML = """
         var(--bg);
       color:var(--text);
     }
-    .wrap { max-width:1360px; margin:0 auto; padding:20px; }
+    .wrap { max-width:1240px; margin:0 auto; padding:24px; }
     .hero, .card {
       border:1px solid var(--border);
       background:linear-gradient(180deg,var(--panel),var(--panel2));
-      border-radius:14px;
-      padding:14px;
-      margin-bottom:12px;
+      border-radius:16px;
+      padding:16px;
+      margin-bottom:14px;
+      box-shadow: 0 10px 30px rgba(2,8,23,.22);
     }
     .hero h1 { margin:0 0 6px; font-size:24px; }
     .muted { color:var(--muted); font-size:13px; }
@@ -76,15 +77,16 @@ HTML = """
 
     .btn {
       border:1px solid var(--border);
-      border-radius:10px;
-      padding:8px 12px;
+      border-radius:12px;
+      padding:9px 13px;
       background:#1d2f57;
       color:#e7edff;
       cursor:pointer;
       text-decoration:none;
       display:inline-block;
+      transition: all .18s ease;
     }
-    .btn:hover { filter:brightness(1.08); }
+    .btn:hover { filter:brightness(1.08); transform: translateY(-1px); }
     .btn.primary { background:linear-gradient(180deg,#4f8fff,#3b73d7); border-color:#6aa2ff; }
     .btn.mapcta {
       background: linear-gradient(180deg,#26d0a4,#138d6f);
@@ -319,8 +321,8 @@ HTML = """
     <div class="hero">
       <div class="row" style="justify-content:space-between;align-items:flex-start;">
         <div>
-          <h1>Offgrid Intel Kit Dashboard</h1>
-          <p class="muted">Paid-ready offline console — Knowledge, Maps, Translator, Ebooks.</p>
+          <h1>Offgrid Intel Kit</h1>
+          <p class="muted">Luxury offline intelligence console — instant access to knowledge, maps, translation, and field-ready reading.</p>
         </div>
         <div class="pill"><span class="status-dot {{ 'warn' if translator_offline_warning else '' }}"></span>{{ translator_status }}</div>
       </div>
@@ -335,12 +337,12 @@ HTML = """
 
     <div class="card">
       <div class="row">
-        <a class="btn primary" href="/" style="font-weight:700;">📘 Knowledge</a>
-        <a class="btn mapcta" href="http://{{ host_ip }}:8091" target="_blank">🗺️ Maps</a>
-        <a class="btn" href="#translator">🈯 Translator</a>
-        <a class="btn" href="/ebooks" target="_blank">📚 Ebooks</a>
-        <a class="btn" href="/setup" target="_blank">🧭 First-Run Wizard</a>
-        <a class="btn" href="/help" target="_blank">Offline Help</a>
+        <a class="btn primary" href="/" style="font-weight:700;">📘 Knowledge Library</a>
+        <a class="btn mapcta" href="http://{{ host_ip }}:8091" target="_blank">🗺️ Atlas</a>
+        <a class="btn" href="#translator">🈯 Translate</a>
+        <a class="btn" href="/ebooks" target="_blank">📚 Survival Library</a>
+        <a class="btn" href="/setup" target="_blank">✨ Quick Start</a>
+        <a class="btn" href="/help" target="_blank">Support</a>
       </div>
       <div class="row" style="margin-top:8px;">
         <input id="extraDir" class="grow" type="text" placeholder="Optional extra folder to include" value="{{ scan_dir }}" />
@@ -405,15 +407,15 @@ HTML = """
 
       <div>
         <div class="card">
-          <h3 style="margin:0 0 8px;">System Health & Maintenance</h3>
+          <h3 style="margin:0 0 8px;">System Confidence</h3>
           <p class="muted" style="margin:0 0 8px;">{{ health_summary }}</p>
           <div class="row">
-            <button class="btn" onclick="runAdminAction('doctor')">Run Doctor</button>
-            <button class="btn" onclick="runAdminAction('verify')">Verify Integrity</button>
-            <button class="btn" onclick="runAdminAction('backup_usb')">Backup to USB</button>
-            <button class="btn" onclick="runAdminAction('sync_usb')">Sync from USB</button>
+            <button class="btn" onclick="runAdminAction('doctor')">Health Check</button>
+            <button class="btn" onclick="runAdminAction('verify')">Trust Verify</button>
+            <button class="btn" onclick="runAdminAction('backup_usb')">Backup</button>
+            <button class="btn" onclick="runAdminAction('sync_usb')">Import USB</button>
           </div>
-          <pre id="adminOut" style="margin-top:8px;max-height:180px;overflow:auto;">Ready.</pre>
+          <pre id="adminOut" style="margin-top:8px;max-height:180px;overflow:auto;">Ready for action.</pre>
         </div>
 
         <div class="card" id="translator">
@@ -502,22 +504,22 @@ pre{border:1px solid #2a3b63;background:#0f1830;border-radius:10px;padding:10px;
 <script>
 async function runStep(action){
   const out=document.getElementById('out');
-  out.textContent='Running '+action+'...';
+  out.textContent='Working on it…';
   const r=await fetch('/api/admin/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action})});
   const d=await r.json();
   out.textContent=(d.ok?'✅ ':'⚠️ ')+(d.message||'')+'\n\n'+(d.output||'');
 }
 </script>
 </head><body>
-<h1>First-Run Wizard</h1>
+<h1>Quick Start</h1>
 <div class='card'>
-  <p class='muted'>Run these in order for a paid-ready setup.</p>
-  <button class='btn' onclick="runStep('setup_dirs')">1) Create Required Folders</button>
-  <button class='btn' onclick="runStep('doctor')">2) Run System Doctor</button>
-  <button class='btn' onclick="runStep('verify')">3) Verify Integrity</button>
-  <button class='btn' onclick="runStep('sync_usb')">4) Import from USB (if attached)</button>
+  <p class='muted'>Tap each step once and you're live in under a minute.</p>
+  <button class='btn' onclick="runStep('setup_dirs')">1) Prepare My Library</button>
+  <button class='btn' onclick="runStep('doctor')">2) Run Confidence Check</button>
+  <button class='btn' onclick="runStep('verify')">3) Verify Bundle Integrity</button>
+  <button class='btn' onclick="runStep('sync_usb')">4) Import My USB Content</button>
 </div>
-<div class='card'><pre id='out'>Ready.</pre></div>
+<div class='card'><pre id='out'>Ready. Press step 1.</pre></div>
 </body></html>
 """
 
