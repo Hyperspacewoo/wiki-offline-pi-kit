@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from flask import Flask, request, render_template_string, jsonify
+from flask import Flask, request, render_template_string, jsonify, send_file, abort
 from pathlib import Path
 import subprocess
 import requests
@@ -16,6 +16,13 @@ DEFAULT_ROOTS = [
     Path.home() / ".openclaw/workspace/wiki-offline-pi-kit/zims",
     Path.home() / ".openclaw/workspace/wiki-offline-pi-kit",
 ]
+
+EBOOK_ROOTS = [
+    Path("/mnt/wiki-ssd/ebooks"),
+    Path.home() / "wiki/ebooks",
+    Path.home() / ".openclaw/workspace/wiki-offline-pi-kit/ebooks",
+]
+EBOOK_EXTS = {".pdf", ".epub", ".mobi", ".azw3", ".txt", ".md"}
 
 HTML = """
 <!doctype html>
@@ -313,6 +320,7 @@ HTML = """
       <div class="row">
         <input id="extraDir" class="grow" type="text" placeholder="Optional extra folder to include" value="{{ scan_dir }}" />
         <button class="btn primary" onclick="rescan()">Rescan + Sync All ZIMs</button>
+        <a class="btn" href="/ebooks" target="_blank">📚 Open Ebooks</a>
         <a class="btn mapcta" href="http://{{ host_ip }}:8091" target="_blank">🗺️ Open Offline Maps</a>
         <a class="btn" href="/help" target="_blank">Offline Help</a>
       </div>
@@ -422,9 +430,30 @@ HELP_HTML = """
 <h2>Translator</h2>
 <ul><li>Built for offline use with local translation engine(s)</li><li>If language packs are missing, install Argos Translate + package files and restart <code>zim-ui.service</code></li></ul>
 <h2>USB Distribution</h2>
-<ul><li>Run <code>START_LINUX.sh</code> (Linux), <code>START_WINDOWS.bat</code> (Windows), or <code>START_MAC.command</code> (macOS)</li><li>Use <code>verify_checksums.sh</code> before install</li></ul>
+<ul><li>Run <code>START_LINUX.sh</code> (Linux), <code>START_WINDOWS.bat</code> (Windows), or <code>START_MAC.command</code> (macOS)</li><li>Use <code>scripts/verify_checksums.sh</code> before install</li></ul>
 <h2>Troubleshooting</h2>
 <ul><li>Check service status: <code>wiki-status</code>, <code>zim-ui-status</code>, <code>map-ui-status</code></li><li>Port check: <code>ss -ltnp | grep -E ':8080|:8090|:8091'</code></li></ul>
+</body></html>
+"""
+
+EBOOKS_HTML = """
+<!doctype html><html><head><meta charset='utf-8'><title>Offline Ebooks</title>
+<style>
+body{font-family:Inter,Arial,sans-serif;max-width:1100px;margin:24px auto;padding:0 16px;color:#eaf0ff;background:#0b1020}
+h1{color:#9ec0ff} .muted{color:#a9b5d1}
+.card{border:1px solid #2a3b63;background:#121a2b;border-radius:12px;padding:12px;margin-bottom:12px}
+a{color:#7bb2ff}
+.row{padding:8px;border-bottom:1px solid #27375f}
+.path{font-size:12px;color:#9eb3df}
+</style></head><body>
+<h1>Offline Ebooks</h1>
+<div class='card'>
+  <div class='muted'>Drop ebooks into any of these folders:</div>
+  <ul>__ROOTS_HTML__</ul>
+</div>
+<div class='card'>
+  __ROWS_HTML__
+</div>
 </body></html>
 """
 
@@ -663,6 +692,63 @@ def translator_status_text():
         return "Translator offline-ready but packages not installed", True
 
 
+def _ebook_roots_existing():
+    roots = []
+    for r in EBOOK_ROOTS:
+        try:
+            rr = r.expanduser().resolve()
+        except Exception:
+            rr = r.expanduser()
+
+        # Only auto-create inside home paths; external roots are optional.
+        try:
+            if str(rr).startswith(str(Path.home())):
+                rr.mkdir(parents=True, exist_ok=True)
+            elif not rr.exists():
+                continue
+        except Exception:
+            continue
+
+        roots.append(rr)
+    return roots
+
+
+def list_ebooks(limit: int = 500):
+    roots = _ebook_roots_existing()
+    out = []
+    seen = set()
+    for root in roots:
+        for p in root.rglob('*'):
+            if not p.is_file() or p.suffix.lower() not in EBOOK_EXTS:
+                continue
+            rp = str(p.resolve())
+            if rp in seen:
+                continue
+            seen.add(rp)
+            out.append({
+                'name': p.name,
+                'path': rp,
+                'size': format_size(p.stat().st_size if p.exists() else 0),
+            })
+            if len(out) >= limit:
+                return roots, sorted(out, key=lambda x: x['name'].lower())
+    return roots, sorted(out, key=lambda x: x['name'].lower())
+
+
+def _is_under_roots(path: Path, roots):
+    try:
+        rp = path.resolve()
+    except Exception:
+        return False
+    for root in roots:
+        try:
+            rp.relative_to(root)
+            return True
+        except Exception:
+            continue
+    return False
+
+
 def build_page(extra_scan_dir: str, do_resync: bool):
     roots = build_roots(extra_scan_dir)
     paths = scan_zims(roots)
@@ -715,6 +801,35 @@ def index():
 @app.get("/help")
 def help_page():
     return HELP_HTML
+
+
+@app.get("/ebooks")
+def ebooks_page():
+    roots, files = list_ebooks()
+    roots_html = ''.join(f"<li><code>{str(r)}</code></li>" for r in roots)
+    if files:
+        rows_html = ''.join(
+            f"<div class='row'><a href='/ebooks/file?path={quote(f['path'])}' target='_blank'>{f['name']}</a>"
+            f" <span class='muted'>({f['size']})</span><div class='path'>{f['path']}</div></div>"
+            for f in files
+        )
+    else:
+        rows_html = "<div class='muted'>No ebooks found yet. Add files to one of the ebook folders above.</div>"
+    return EBOOKS_HTML.replace('__ROOTS_HTML__', roots_html).replace('__ROWS_HTML__', rows_html)
+
+
+@app.get("/ebooks/file")
+def ebooks_file():
+    raw = (request.args.get("path") or "").strip()
+    if not raw:
+        return abort(400)
+    p = Path(raw).expanduser()
+    roots = _ebook_roots_existing()
+    if not p.exists() or not p.is_file() or p.suffix.lower() not in EBOOK_EXTS:
+        return abort(404)
+    if not _is_under_roots(p, roots):
+        return abort(403)
+    return send_file(str(p), conditional=True)
 
 
 @app.get("/api/wiki/search")
