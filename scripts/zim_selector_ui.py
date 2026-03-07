@@ -341,7 +341,7 @@ HTML = """
         <a class="btn mapcta" href="http://{{ host_ip }}:8091" target="_blank">🗺️ Atlas</a>
         <a class="btn" href="#translator">🈯 Translate</a>
         <a class="btn" href="/ebooks" target="_blank">📚 Survival Library</a>
-        <a class="btn" href="/setup" target="_blank">✨ Quick Start</a>
+        <a class="btn" href="/setup" target="_blank">✨ Personalize</a>
         <a class="btn" href="/help" target="_blank">Support</a>
       </div>
       <div class="row" style="margin-top:8px;">
@@ -494,7 +494,7 @@ a{color:#7bb2ff}
 """
 
 SETUP_HTML = """
-<!doctype html><html><head><meta charset='utf-8'><title>First-Run Wizard</title>
+<!doctype html><html><head><meta charset='utf-8'><title>Instant Personalize</title>
 <style>
 body{font-family:Inter,Arial,sans-serif;max-width:980px;margin:24px auto;padding:0 16px;color:#eaf0ff;background:#0b1020}
 h1{color:#9ec0ff}.card{border:1px solid #2a3b63;background:#121a2b;border-radius:12px;padding:12px;margin-bottom:12px}
@@ -511,9 +511,9 @@ async function runStep(action){
 }
 </script>
 </head><body>
-<h1>Quick Start</h1>
+<h1>Instant Personalize</h1>
 <div class='card'>
-  <p class='muted'>Tap each step once and you're live in under a minute.</p>
+  <p class='muted'>You’re already live. Use these one-tap actions to personalize and verify your system in under a minute.</p>
   <button class='btn' onclick="runStep('setup_dirs')">1) Prepare My Library</button>
   <button class='btn' onclick="runStep('doctor')">2) Run Confidence Check</button>
   <button class='btn' onclick="runStep('verify')">3) Verify Bundle Integrity</button>
@@ -834,27 +834,37 @@ def run_admin_action(action: str):
     root = Path.home() / ".openclaw/workspace/wiki-offline-pi-kit"
     scripts = root / "scripts"
 
-    def run(cmd):
-        out = subprocess.check_output(cmd, cwd=str(root), stderr=subprocess.STDOUT, text=True)
-        return out[-4000:]
+    def run(cmd, timeout=120):
+        try:
+            p = subprocess.run(cmd, cwd=str(root), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=timeout)
+            out = (p.stdout or "")[-4000:]
+            return (p.returncode == 0), out
+        except subprocess.TimeoutExpired:
+            return False, "Action timed out. Please try again."
+        except Exception as e:
+            return False, f"Action failed: {e}"
 
     if action == "doctor":
-        return True, "Doctor completed", run(["bash", str(scripts / "doctor.sh")])
+        ok, out = run(["bash", str(scripts / "doctor.sh")], timeout=90)
+        return ok, ("Health check completed" if ok else "Health check found issues"), out
     if action == "verify":
-        return True, "Integrity check completed", run(["bash", str(scripts / "verify_checksums.sh")])
+        ok, out = run(["bash", str(scripts / "verify_checksums.sh")], timeout=90)
+        return ok, ("Integrity verified" if ok else "Integrity check failed"), out
     if action == "backup_usb":
-        return True, "Backup sync completed", run(["bash", str(scripts / "sync_external_drive.sh")])
+        ok, out = run(["bash", str(scripts / "sync_external_drive.sh")], timeout=180)
+        return ok, ("Backup completed" if ok else "Backup failed"), out
     if action == "sync_usb":
         usb = "/media/void/94AA7041AA7021C2/OfflineKnowledgeKit/wiki-offline-pi-kit/zims"
         if not Path(usb).exists():
-            return False, "USB zims path not found", usb
-        return True, "Imported ZIMs from USB path", run(["bash", str(scripts / "import_zims_from_usb.sh"), usb])
+            return False, "USB content not found", usb
+        ok, out = run(["bash", str(scripts / "import_zims_from_usb.sh"), usb], timeout=180)
+        return ok, ("USB import completed" if ok else "USB import failed"), out
     if action == "setup_dirs":
         created = []
         for p in [Path.home()/"wiki/ebooks", root/"ebooks", Path.home()/"wiki/zim"]:
             p.mkdir(parents=True, exist_ok=True)
             created.append(str(p))
-        return True, "Directories ready", "\n".join(created)
+        return True, "Library folders ready", "\n".join(created)
     return False, "Unknown action", action
 
 
