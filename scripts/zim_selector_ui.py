@@ -266,6 +266,29 @@ HTML = """
       } catch (e) { parsed.textContent = 'Parse failed.'; }
     }
 
+    function quickAction(kind) {
+      if (kind === 'translate') {
+        document.getElementById('trInput').value = 'I need medical help';
+        document.getElementById('trSource').value = 'en';
+        document.getElementById('trTarget').value = 'es';
+        const t = document.getElementById('translator');
+        if (t) t.scrollIntoView({behavior:'smooth', block:'start'});
+        return;
+      }
+      const queries = {
+        water: 'water purification',
+        firstaid: 'first aid',
+        shelter: 'shelter building'
+      };
+      const q = queries[kind] || '';
+      if (!q) return;
+      const input = document.getElementById('wikiQ');
+      input.value = q;
+      const section = document.getElementById('wiki-search');
+      if (section) section.scrollIntoView({behavior:'smooth', block:'start'});
+      wikiSearch();
+    }
+
     function swapTranslatorLangs() {
       const src = document.getElementById('trSource');
       const dst = document.getElementById('trTarget');
@@ -355,10 +378,10 @@ HTML = """
 
     <div class="card">
       <div class="row">
-        <button class="btn" onclick="document.getElementById('wikiQ').value='water purification'; wikiSearch();">💧 Water Purification</button>
-        <button class="btn" onclick="document.getElementById('wikiQ').value='first aid'; wikiSearch();">🩹 First Aid</button>
-        <button class="btn" onclick="document.getElementById('wikiQ').value='shelter building'; wikiSearch();">🏕️ Shelter</button>
-        <button class="btn" onclick="document.getElementById('trInput').value='I need medical help'; document.getElementById('trSource').value='en'; document.getElementById('trTarget').value='es';">🈺 Emergency Phrase</button>
+        <button class="btn" onclick="quickAction('water')">💧 Water Purification</button>
+        <button class="btn" onclick="quickAction('firstaid')">🩹 First Aid</button>
+        <button class="btn" onclick="quickAction('shelter')">🏕️ Shelter</button>
+        <button class="btn" onclick="quickAction('translate')">🈺 Emergency Phrase</button>
       </div>
     </div>
 
@@ -406,7 +429,7 @@ HTML = """
           </div>
         </div>
 
-        <div class="card">
+        <div class="card" id="wiki-search">
           <h3 style="margin:0 0 8px;">Wiki Search</h3>
           <div class="row"><input id="wikiQ" class="grow" type="text" placeholder="Search active content (e.g., black holes)" /><button class="btn primary" type="button" onclick="wikiSearch()">Search</button></div>
           <div class="split" style="margin-top:10px;">
