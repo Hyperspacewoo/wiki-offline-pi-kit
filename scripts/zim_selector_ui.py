@@ -364,7 +364,7 @@ HTML = """
 
     <div class="card">
       <div class="row">
-        <a class="btn primary" href="/" style="font-weight:700;">📘 Knowledge</a>
+        <a class="btn primary" href="#knowledge" style="font-weight:700;">📘 Knowledge</a>
         <a class="btn mapcta" href="http://{{ host_ip }}:8091">🗺️ Maps</a>
         <button class="btn" onclick="quickAction('translate')">🈯 Translate</button>
         <a class="btn" href="/ebooks">📚 Library</a>
@@ -392,7 +392,7 @@ HTML = """
 
     <div class="main-layout">
       <div>
-        <div class="card">
+        <div class="card" id="knowledge">
           <div class="row" style="margin-bottom:8px;">
             <input id="q" class="grow" type="text" placeholder="Filter by title/category/path... (press / to focus)" oninput="quickFilter()" />
             <select id="sortMode" class="btn" onchange="sortRows()" style="padding:8px 10px;">
