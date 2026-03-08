@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from flask import Flask, request, render_template_string, jsonify, send_file, abort
+from flask import Flask, request, render_template_string, jsonify, send_file, abort, redirect
 from pathlib import Path
 import subprocess
 import requests
@@ -364,10 +364,10 @@ HTML = """
 
     <div class="card">
       <div class="row">
-        <a class="btn primary" href="#knowledge" style="font-weight:700;">📘 Knowledge</a>
-        <a class="btn mapcta" href="http://{{ host_ip }}:8091">🗺️ Maps</a>
-        <button class="btn" onclick="quickAction('translate')">🈯 Translate</button>
-        <a class="btn" href="/ebooks">📚 Library</a>
+        <a class="btn primary" href="/go/knowledge" style="font-weight:700;">📘 Knowledge</a>
+        <a class="btn mapcta" href="/go/maps">🗺️ Maps</a>
+        <a class="btn" href="/go/translate">🈯 Translate</a>
+        <a class="btn" href="/go/library">📚 Library</a>
       </div>
       <div class="row" style="margin-top:8px;">
         <a class="btn" href="/morse">📡 Morse</a>
@@ -490,7 +490,7 @@ HTML = """
             </div>
             <textarea id="trInput" name="text" style="margin-top:10px;" placeholder="Type what one person says (or paste any text)...">{{ tr_input }}</textarea>
             <div class="row" style="margin-top:6px;">
-              <button class="btn primary" type="submit">Translate</button>
+              <button class="btn primary" type="button" onclick="translateText()">Translate</button>
               <button class="btn" type="submit" formaction="/translate_form">Translate (reliable)</button>
               <button class="btn" type="button" onclick="document.getElementById('trInput').value = document.getElementById('trOutput').value || ''">Use Output as Next Input</button>
             </div>
@@ -1178,6 +1178,26 @@ def help_page():
 @app.get("/setup")
 def setup_page():
     return SETUP_HTML
+
+
+@app.get("/go/knowledge")
+def go_knowledge():
+    return redirect(f"http://{host_ip()}:8080")
+
+
+@app.get("/go/maps")
+def go_maps():
+    return redirect(f"http://{host_ip()}:8091")
+
+
+@app.get("/go/translate")
+def go_translate():
+    return redirect('/#translator')
+
+
+@app.get("/go/library")
+def go_library():
+    return redirect('/ebooks')
 
 
 @app.get("/morse")
