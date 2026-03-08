@@ -258,11 +258,11 @@ HTML = """
       } catch (e) { list.innerHTML = '<div class="muted">Search failed.</div>'; }
     }
 
-    async function wikiParse(encUrl) {
+    async function wikiParse(url) {
       const parsed = document.getElementById('wikiParsed');
       parsed.textContent = 'Parsing…';
       try {
-        const data = await fetch('/api/wiki/parse?url=' + encUrl).then(r => r.json());
+        const data = await fetch('/api/wiki/parse?url=' + encodeURIComponent(url)).then(r => r.json());
         parsed.textContent = data.text || 'No text extracted.';
       } catch (e) { parsed.textContent = 'Parse failed.'; }
     }
@@ -340,18 +340,6 @@ HTML = """
           filterInput.focus();
         }
       });
-
-      const tf = document.getElementById('translateForm');
-      if (tf) {
-        tf.addEventListener('submit', async (e) => {
-          // Progressive enhancement: JS path by default, server fallback when user chooses reliable.
-          const sub = e.submitter;
-          const useReliable = sub && (sub.textContent || '').toLowerCase().includes('reliable');
-          if (useReliable) return; // allow normal form POST refresh
-          e.preventDefault();
-          await translateText();
-        });
-      }
     });
   </script>
 </head>
@@ -394,12 +382,12 @@ HTML = """
 
     <div class="card">
       <div class="row">
-        <button class="btn" onclick="quickAction('water')">💧 Water Purification</button>
-        <button class="btn" onclick="quickAction('firstaid')">🩹 First Aid</button>
-        <button class="btn" onclick="quickAction('shelter')">🏕️ Shelter</button>
-        <button class="btn" onclick="quickAction('translate')">🈺 Emergency Phrase</button>
+        <a class="btn" href="/?qa=water#wiki-search">💧 Water Purification</a>
+        <a class="btn" href="/?qa=firstaid#wiki-search">🩹 First Aid</a>
+        <a class="btn" href="/?qa=shelter#wiki-search">🏕️ Shelter</a>
+        <a class="btn" href="/?qa=translate#translator">🈺 Emergency Phrase</a>
       </div>
-      <p id="quickActionStatus" class="muted" style="margin-top:8px;">Tap any action to jump instantly.</p>
+      <p id="quickActionStatus" class="muted" style="margin-top:8px;">{{ qa_status or 'Tap any action to jump instantly.' }}</p>
     </div>
 
     <div class="main-layout">
@@ -450,7 +438,19 @@ HTML = """
           <h3 style="margin:0 0 8px;">Wiki Search</h3>
           <div class="row"><input id="wikiQ" class="grow" type="text" placeholder="Search active content (e.g., black holes)" /><button class="btn primary" type="button" onclick="wikiSearch()">Search</button></div>
           <div class="split" style="margin-top:10px;">
-            <div style="border:1px solid var(--border);border-radius:10px;max-height:240px;overflow:auto;padding:6px;" id="wikiResults"><div class="muted">Run a query to see results.</div></div>
+            <div style="border:1px solid var(--border);border-radius:10px;max-height:240px;overflow:auto;padding:6px;" id="wikiResults">
+              {% if wiki_results and wiki_results|length > 0 %}
+                {% for r in wiki_results %}
+                  <div style="padding:8px;border-bottom:1px solid #24345d;">
+                    <div><strong>{{ loop.index }}. {{ r.title }}</strong></div>
+                    <div class="muted"><a href="{{ r.url }}" target="_blank">Open full article</a></div>
+                    <button class="btn" style="margin-top:6px;" onclick='wikiParse({{ r.url|tojson }})'>Parse excerpt</button>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <div class="muted">Run a query to see results.</div>
+              {% endif %}
+            </div>
             <div style="border:1px solid var(--border);border-radius:10px;max-height:240px;overflow:auto;padding:10px;white-space:pre-wrap;" id="wikiParsed"></div>
           </div>
         </div>
@@ -1077,7 +1077,7 @@ def run_admin_action(action: str):
     return False, "Unknown action", action
 
 
-def build_page(extra_scan_dir: str, do_resync: bool, tr_input: str = "", tr_source: str = "en", tr_target: str = "es", tr_output: str = "", tr_meta: str = ""):
+def build_page(extra_scan_dir: str, do_resync: bool, tr_input: str = "", tr_source: str = "en", tr_target: str = "es", tr_output: str = "", tr_meta: str = "", wiki_results=None, qa_status: str = ""):
     roots = build_roots(extra_scan_dir)
     paths = scan_zims(roots)
     sync_msg = sync_all_loaded(paths) if do_resync else ""
@@ -1131,6 +1131,8 @@ def build_page(extra_scan_dir: str, do_resync: bool, tr_input: str = "", tr_sour
         tr_target=tr_target,
         tr_output=tr_output,
         tr_meta=tr_meta,
+        wiki_results=wiki_results or [],
+        qa_status=qa_status,
     )
 
 
@@ -1143,7 +1145,29 @@ def index():
     tr_target = request.args.get("tr_target", "es")
     tr_output = request.args.get("tr_output", "")
     tr_meta = request.args.get("tr_meta", "")
-    return build_page(scan_dir, do_resync, tr_input, tr_source, tr_target, tr_output, tr_meta)
+
+    qa = (request.args.get("qa") or "").strip().lower()
+    wiki_results = []
+    qa_status = ""
+    if qa in {"water", "firstaid", "shelter"}:
+        qmap = {
+            "water": "water purification",
+            "firstaid": "first aid",
+            "shelter": "shelter building",
+        }
+        q = qmap[qa]
+        try:
+            wiki_results = wiki_search(q)
+            qa_status = f"Showing results for: {q}"
+        except Exception:
+            qa_status = f"Search failed for: {q}"
+    elif qa == "translate":
+        tr_input = tr_input or "I need medical help"
+        tr_source = tr_source or "en"
+        tr_target = tr_target or "es"
+        qa_status = "Prepared emergency phrase in translator."
+
+    return build_page(scan_dir, do_resync, tr_input, tr_source, tr_target, tr_output, tr_meta, wiki_results, qa_status)
 
 
 @app.get("/help")
