@@ -364,7 +364,7 @@ HTML = """
 
     <div class="card">
       <div class="row">
-        <a class="btn primary" href="/go/knowledge" style="font-weight:700;">📘 Knowledge</a>
+        <a class="btn primary" href="/go/knowledge" target="_blank" style="font-weight:700;">📘 Knowledge</a>
         <a class="btn mapcta" href="/go/maps">🗺️ Maps</a>
         <a class="btn" href="/go/translate">🈯 Translate</a>
         <a class="btn" href="/go/library">📚 Library</a>
@@ -382,10 +382,10 @@ HTML = """
 
     <div class="card">
       <div class="row">
-        <a class="btn" href="/?qa=water#wiki-search">💧 Water Purification</a>
-        <a class="btn" href="/?qa=firstaid#wiki-search">🩹 First Aid</a>
-        <a class="btn" href="/?qa=shelter#wiki-search">🏕️ Shelter</a>
-        <a class="btn" href="/?qa=translate#translator">🈺 Emergency Phrase</a>
+        <a class="btn" href="/go/water">💧 Water Purification</a>
+        <a class="btn" href="/go/firstaid">🩹 First Aid</a>
+        <a class="btn" href="/go/shelter">🏕️ Shelter</a>
+        <a class="btn" href="/go/emergency-phrase">🈺 Emergency Phrase</a>
       </div>
       <p id="quickActionStatus" class="muted" style="margin-top:8px;">{{ qa_status or 'Tap any action to jump instantly.' }}</p>
     </div>
@@ -490,7 +490,7 @@ HTML = """
             </div>
             <textarea id="trInput" name="text" style="margin-top:10px;" placeholder="Type what one person says (or paste any text)...">{{ tr_input }}</textarea>
             <div class="row" style="margin-top:6px;">
-              <button class="btn primary" type="button" onclick="translateText()">Translate</button>
+              <button class="btn primary" type="submit" formaction="/translate_form">Translate</button>
               <button class="btn" type="submit" formaction="/translate_form">Translate (reliable)</button>
               <button class="btn" type="button" onclick="document.getElementById('trInput').value = document.getElementById('trOutput').value || ''">Use Output as Next Input</button>
             </div>
@@ -1200,6 +1200,26 @@ def go_library():
     return redirect('/ebooks')
 
 
+@app.get("/go/water")
+def go_water():
+    return redirect('/?qa=water#wiki-search')
+
+
+@app.get("/go/firstaid")
+def go_firstaid():
+    return redirect('/?qa=firstaid#wiki-search')
+
+
+@app.get("/go/shelter")
+def go_shelter():
+    return redirect('/?qa=shelter#wiki-search')
+
+
+@app.get("/go/emergency-phrase")
+def go_emergency_phrase():
+    return redirect('/?qa=translate#translator')
+
+
 @app.get("/morse")
 def morse_page():
     return MORSE_HTML
@@ -1298,7 +1318,7 @@ def translate_form():
         "tr_meta": tr_meta,
     })
     from flask import redirect
-    return redirect(f"/?{qs}")
+    return redirect(f"/?{qs}#translator")
 
 
 @app.post("/api/translate")
