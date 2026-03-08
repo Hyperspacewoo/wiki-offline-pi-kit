@@ -619,22 +619,22 @@ async function play(){
 </body></html>
 """
 
-LANGUAGE_OPTIONS = [
-    {"code": "auto", "label": "Auto Detect"},
-    {"code": "en", "label": "English"},
-    {"code": "es", "label": "Spanish"},
-    {"code": "fr", "label": "French"},
-    {"code": "de", "label": "German"},
-    {"code": "it", "label": "Italian"},
-    {"code": "pt", "label": "Portuguese"},
-    {"code": "ru", "label": "Russian"},
-    {"code": "uk", "label": "Ukrainian"},
-    {"code": "ar", "label": "Arabic"},
-    {"code": "hi", "label": "Hindi"},
-    {"code": "ja", "label": "Japanese"},
-    {"code": "ko", "label": "Korean"},
-    {"code": "zh", "label": "Chinese"},
-]
+LANGUAGE_LABELS = {
+    "auto": "Auto Detect",
+    "en": "English",
+    "es": "Spanish",
+    "fr": "French",
+    "de": "German",
+    "it": "Italian",
+    "pt": "Portuguese",
+    "ru": "Russian",
+    "uk": "Ukrainian",
+    "ar": "Arabic",
+    "hi": "Hindi",
+    "ja": "Japanese",
+    "ko": "Korean",
+    "zh": "Chinese",
+}
 
 
 def format_size(n: int) -> str:
@@ -854,6 +854,20 @@ def translator_status_text():
         return "Translator offline-ready but packages not installed", True
 
 
+def language_options_for_installed():
+    options = [{"code": "auto", "label": LANGUAGE_LABELS.get("auto", "Auto Detect")}]
+    try:
+        import argostranslate.translate as argos_translate
+        installed = sorted({l.code for l in argos_translate.get_installed_languages()})
+        for c in installed:
+            options.append({"code": c, "label": LANGUAGE_LABELS.get(c, c.upper())})
+    except Exception:
+        # fallback to known defaults if translator libs unavailable
+        for c in ["en", "es", "fr"]:
+            options.append({"code": c, "label": LANGUAGE_LABELS.get(c, c.upper())})
+    return options
+
+
 def _ebook_roots_existing():
     roots = []
     for r in EBOOK_ROOTS:
@@ -989,6 +1003,7 @@ def build_page(extra_scan_dir: str, do_resync: bool):
 
     status, warning = translator_status_text()
     health_summary = health_summary_text()
+    language_options = language_options_for_installed()
 
     return render_template_string(
         HTML,
@@ -1001,7 +1016,7 @@ def build_page(extra_scan_dir: str, do_resync: bool):
         scan_dir=extra_scan_dir,
         host_ip=ip,
         sync_msg=sync_msg,
-        language_options=LANGUAGE_OPTIONS,
+        language_options=language_options,
         translator_status=status,
         translator_offline_warning=warning,
         health_summary=health_summary,
