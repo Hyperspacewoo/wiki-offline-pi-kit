@@ -10,6 +10,14 @@ import os
 
 app = Flask(__name__)
 
+
+@app.after_request
+def no_store(resp):
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
+
 LIST_FILE = Path.home() / "wiki/data/active_zims.txt"
 KIWIX_BASE = "http://127.0.0.1:8080"
 DEFAULT_ROOTS = [
@@ -364,10 +372,10 @@ HTML = """
 
     <div class="card">
       <div class="row">
-        <a class="btn primary" href="/go/knowledge" target="_blank" style="font-weight:700;">📘 Knowledge</a>
-        <a class="btn mapcta" href="/go/maps">🗺️ Maps</a>
-        <a class="btn" href="/go/translate">🈯 Translate</a>
-        <a class="btn" href="/go/library">📚 Library</a>
+        <a class="btn primary" href="http://{{ host_ip }}:8080" target="_blank" style="font-weight:700;">📘 Knowledge</a>
+        <a class="btn mapcta" href="http://{{ host_ip }}:8091">🗺️ Maps</a>
+        <a class="btn" href="#translator">🈯 Translate</a>
+        <a class="btn" href="/ebooks">📚 Library</a>
       </div>
       <div class="row" style="margin-top:8px;">
         <a class="btn" href="/morse">📡 Morse</a>
@@ -382,10 +390,10 @@ HTML = """
 
     <div class="card">
       <div class="row">
-        <a class="btn" href="/go/water">💧 Water Purification</a>
-        <a class="btn" href="/go/firstaid">🩹 First Aid</a>
-        <a class="btn" href="/go/shelter">🏕️ Shelter</a>
-        <a class="btn" href="/go/emergency-phrase">🈺 Emergency Phrase</a>
+        <a class="btn" href="http://{{ host_ip }}:8080/search?pattern=water%20purification" target="_blank">💧 Water Purification</a>
+        <a class="btn" href="http://{{ host_ip }}:8080/search?pattern=first%20aid" target="_blank">🩹 First Aid</a>
+        <a class="btn" href="http://{{ host_ip }}:8080/search?pattern=shelter%20building" target="_blank">🏕️ Shelter</a>
+        <a class="btn" href="/?qa=translate#translator">🈺 Emergency Phrase</a>
       </div>
       <p id="quickActionStatus" class="muted" style="margin-top:8px;">{{ qa_status or 'Tap any action to jump instantly.' }}</p>
     </div>
