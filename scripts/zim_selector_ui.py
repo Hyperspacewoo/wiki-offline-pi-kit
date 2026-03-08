@@ -340,6 +340,18 @@ HTML = """
           filterInput.focus();
         }
       });
+
+      const tf = document.getElementById('translateForm');
+      if (tf) {
+        tf.addEventListener('submit', async (e) => {
+          // Progressive enhancement: JS path by default, server fallback when user chooses reliable.
+          const sub = e.submitter;
+          const useReliable = sub && (sub.textContent || '').toLowerCase().includes('reliable');
+          if (useReliable) return; // allow normal form POST refresh
+          e.preventDefault();
+          await translateText();
+        });
+      }
     });
   </script>
 </head>
@@ -462,7 +474,7 @@ HTML = """
         <div class="card" id="translator">
           <h3 style="margin:0 0 8px;">Translator (Offline)</h3>
           <p class="muted" style="margin:0 0 10px;">One clean flow for both conversation and normal text translation.</p>
-          <form method="post" action="/translate_form">
+          <form id="translateForm" method="post" action="/translate_form">
             <div class="row">
               <select id="trSource" name="source">
                 {% for c in language_options %}
@@ -478,8 +490,8 @@ HTML = """
             </div>
             <textarea id="trInput" name="text" style="margin-top:10px;" placeholder="Type what one person says (or paste any text)...">{{ tr_input }}</textarea>
             <div class="row" style="margin-top:6px;">
-              <button class="btn primary" type="button" onclick="translateText()">Translate</button>
-              <button class="btn" type="submit">Translate (reliable)</button>
+              <button class="btn primary" type="submit">Translate</button>
+              <button class="btn" type="submit" formaction="/translate_form">Translate (reliable)</button>
               <button class="btn" type="button" onclick="document.getElementById('trInput').value = document.getElementById('trOutput').value || ''">Use Output as Next Input</button>
             </div>
           </form>
