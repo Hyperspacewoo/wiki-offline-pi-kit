@@ -758,6 +758,55 @@ def sync_all_loaded(paths):
         return f"Synced list, but restart failed: {e}"
 
 
+def kiwix_content_map():
+    out = {}
+    try:
+        r = requests.get(f"{KIWIX_BASE}/catalog/v2/entries?count=100", timeout=20)
+        r.raise_for_status()
+        soup = BeautifulSoup(r.text, "xml")
+        for entry in soup.find_all("entry"):
+            title = (entry.find("title").get_text(" ", strip=True) if entry.find("title") else "").strip()
+            href = ""
+            for link in entry.find_all("link"):
+                h = (link.get("href") or "").strip()
+                if h.startswith("/content/"):
+                    href = h
+                    break
+            if title and href:
+                out[title.lower()] = href
+    except Exception:
+        pass
+    return out
+
+
+def resolve_open_href(filename: str, title: str, content_map: dict):
+    n = filename.lower()
+    t = title.lower()
+
+    # direct title match from catalog
+    if t in content_map:
+        return content_map[t]
+
+    # fallback keyword matching
+    prefs = []
+    if "wikipedia" in n:
+        prefs += ["wikipedia"]
+    if "wikem" in n or "medicine" in n:
+        prefs += ["wikimed", "medical", "wikimedicine"]
+    if "openstreetmap" in n or "osm" in n or "map" in n:
+        prefs += ["openstreetmap", "map"]
+    if "stack" in n:
+        prefs += ["stack", "overflow"]
+
+    for key in prefs:
+        for k, href in content_map.items():
+            if key in k:
+                return href
+
+    # final fallback (may fail for renamed files)
+    return f"/content/{quote(Path(filename).stem)}"
+
+
 def wiki_search(query: str, limit: int = 8):
     r = requests.get(f"{KIWIX_BASE}/search", params={"pattern": query}, timeout=20)
     r.raise_for_status()
@@ -1020,20 +1069,27 @@ def build_page(extra_scan_dir: str, do_resync: bool):
 
     zims, total_size = [], 0
     ip = host_ip()
+    cmap = kiwix_content_map()
     for p in paths:
         size_raw = p.stat().st_size if p.exists() else 0
         total_size += size_raw
         category, icon = classify(p.name)
+        ztitle = pretty_title(p.name)
+        href = resolve_open_href(p.name, ztitle, cmap)
+        if href.startswith('/'):
+            open_url = f"http://{ip}:8080{href}"
+        else:
+            open_url = href
         zims.append({
             "path": str(p),
             "filename": p.name,
             "zim_id": p.stem,
-            "title": pretty_title(p.name),
+            "title": ztitle,
             "icon": icon,
             "category": category,
             "size": format_size(size_raw),
             "size_bytes": size_raw,
-            "open_url": f"http://{ip}:8080/content/{quote(p.stem)}/",
+            "open_url": open_url,
         })
 
     status, warning = translator_status_text()
