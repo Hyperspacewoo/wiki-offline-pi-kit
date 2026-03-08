@@ -267,12 +267,14 @@ HTML = """
     }
 
     function quickAction(kind) {
+      const status = document.getElementById('quickActionStatus');
       if (kind === 'translate') {
         document.getElementById('trInput').value = 'I need medical help';
         document.getElementById('trSource').value = 'en';
         document.getElementById('trTarget').value = 'es';
         const t = document.getElementById('translator');
         if (t) t.scrollIntoView({behavior:'smooth', block:'start'});
+        if (status) status.textContent = 'Prepared emergency translation phrase.';
         return;
       }
       const queries = {
@@ -287,6 +289,7 @@ HTML = """
       const section = document.getElementById('wiki-search');
       if (section) section.scrollIntoView({behavior:'smooth', block:'start'});
       wikiSearch();
+      if (status) status.textContent = `Searching for: ${q}`;
     }
 
     function swapTranslatorLangs() {
@@ -361,13 +364,13 @@ HTML = """
     <div class="card">
       <div class="row">
         <a class="btn primary" href="/" style="font-weight:700;">📘 Knowledge</a>
-        <a class="btn mapcta" href="http://{{ host_ip }}:8091" target="_blank">🗺️ Maps</a>
+        <a class="btn mapcta" href="http://{{ host_ip }}:8091">🗺️ Maps</a>
         <a class="btn" href="#translator">🈯 Translate</a>
-        <a class="btn" href="/ebooks" target="_blank">📚 Library</a>
+        <a class="btn" href="/ebooks">📚 Library</a>
       </div>
       <div class="row" style="margin-top:8px;">
-        <a class="btn" href="/morse" target="_blank">📡 Morse</a>
-        <a class="btn" href="/help" target="_blank">Support</a>
+        <a class="btn" href="/morse">📡 Morse</a>
+        <a class="btn" href="/help">Support</a>
       </div>
       <div class="row" style="margin-top:8px;">
         <input id="extraDir" class="grow" type="text" placeholder="Optional extra folder to include" value="{{ scan_dir }}" />
@@ -383,6 +386,7 @@ HTML = """
         <button class="btn" onclick="quickAction('shelter')">🏕️ Shelter</button>
         <button class="btn" onclick="quickAction('translate')">🈺 Emergency Phrase</button>
       </div>
+      <p id="quickActionStatus" class="muted" style="margin-top:8px;">Tap any action to jump instantly.</p>
     </div>
 
     <div class="main-layout">
