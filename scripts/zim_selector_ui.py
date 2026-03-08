@@ -6,6 +6,7 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import quote
 import shlex
+import os
 
 app = Flask(__name__)
 
@@ -365,7 +366,7 @@ HTML = """
       <div class="row">
         <a class="btn primary" href="/" style="font-weight:700;">📘 Knowledge</a>
         <a class="btn mapcta" href="http://{{ host_ip }}:8091">🗺️ Maps</a>
-        <a class="btn" href="#translator">🈯 Translate</a>
+        <button class="btn" onclick="quickAction('translate')">🈯 Translate</button>
         <a class="btn" href="/ebooks">📚 Library</a>
       </div>
       <div class="row" style="margin-top:8px;">
@@ -670,14 +671,39 @@ def build_roots(extra: str):
 
 
 def scan_zims(roots):
-    files = {}
+    # 1) collect unique real paths
+    by_path = {}
     for root in roots:
         for p in root.rglob("*.zim"):
             try:
-                files[str(p.resolve())] = p
+                by_path[str(p.resolve())] = p
             except Exception:
                 continue
-    return sorted(files.values(), key=lambda p: str(p).lower())
+
+    # 2) collapse mirrored duplicates (same ZIM stem from different roots)
+    # prefer larger file when duplicates exist
+    by_stem = {}
+    for p in by_path.values():
+        try:
+            key = p.stem.lower()
+            size = p.stat().st_size if p.exists() else 0
+        except Exception:
+            key, size = p.stem.lower(), 0
+
+        if key not in by_stem:
+            by_stem[key] = p
+            continue
+
+        cur = by_stem[key]
+        try:
+            cur_size = cur.stat().st_size if cur.exists() else 0
+        except Exception:
+            cur_size = 0
+
+        if size > cur_size:
+            by_stem[key] = p
+
+    return sorted(by_stem.values(), key=lambda p: str(p).lower())
 
 
 def classify(name: str):
@@ -965,6 +991,11 @@ def run_admin_action(action: str):
         ok, out = run(["bash", str(scripts / "verify_checksums.sh")], timeout=90)
         return ok, ("Integrity verified" if ok else "Integrity check failed"), out
     if action == "backup_usb":
+        usb_base = Path("/media/void/94AA7041AA7021C2/OfflineKnowledgeKit")
+        if not usb_base.exists():
+            return False, "Backup drive not connected", str(usb_base)
+        if not os.access(str(usb_base), os.W_OK):
+            return False, "Backup drive not writable", f"No write permission: {usb_base}"
         ok, out = run(["bash", str(scripts / "sync_external_drive.sh")], timeout=180)
         return ok, ("Backup completed" if ok else "Backup failed"), out
     if action == "sync_usb":
