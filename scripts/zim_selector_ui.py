@@ -4,7 +4,7 @@ from pathlib import Path
 import subprocess
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 import shlex
 import os
 
@@ -462,26 +462,29 @@ HTML = """
         <div class="card" id="translator">
           <h3 style="margin:0 0 8px;">Translator (Offline)</h3>
           <p class="muted" style="margin:0 0 10px;">One clean flow for both conversation and normal text translation.</p>
-          <div class="row">
-            <select id="trSource">
-              {% for c in language_options %}
-                <option value="{{ c.code }}" {% if c.code == 'en' %}selected{% endif %}>{{ c.label }}</option>
-              {% endfor %}
-            </select>
-            <button class="btn" type="button" onclick="swapTranslatorLangs()">⇄</button>
-            <select id="trTarget">
-              {% for c in language_options %}
-                <option value="{{ c.code }}" {% if c.code == 'es' %}selected{% endif %}>{{ c.label }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <textarea id="trInput" style="margin-top:10px;" placeholder="Type what one person says (or paste any text)..."></textarea>
-          <div class="row" style="margin-top:6px;">
-            <button class="btn primary" onclick="translateText()">Translate</button>
-            <button class="btn" onclick="document.getElementById('trInput').value = document.getElementById('trOutput').value || ''">Use Output as Next Input</button>
-          </div>
-          <textarea id="trOutput" style="margin-top:8px;" placeholder="Translation output..." readonly></textarea>
-          <p id="trMeta" class="muted" style="margin:8px 0 0;"></p>
+          <form method="post" action="/translate_form">
+            <div class="row">
+              <select id="trSource" name="source">
+                {% for c in language_options %}
+                  <option value="{{ c.code }}" {% if c.code == tr_source %}selected{% endif %}>{{ c.label }}</option>
+                {% endfor %}
+              </select>
+              <button class="btn" type="button" onclick="swapTranslatorLangs()">⇄</button>
+              <select id="trTarget" name="target">
+                {% for c in language_options %}
+                  <option value="{{ c.code }}" {% if c.code == tr_target %}selected{% endif %}>{{ c.label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <textarea id="trInput" name="text" style="margin-top:10px;" placeholder="Type what one person says (or paste any text)...">{{ tr_input }}</textarea>
+            <div class="row" style="margin-top:6px;">
+              <button class="btn primary" type="button" onclick="translateText()">Translate</button>
+              <button class="btn" type="submit">Translate (reliable)</button>
+              <button class="btn" type="button" onclick="document.getElementById('trInput').value = document.getElementById('trOutput').value || ''">Use Output as Next Input</button>
+            </div>
+          </form>
+          <textarea id="trOutput" style="margin-top:8px;" placeholder="Translation output..." readonly>{{ tr_output }}</textarea>
+          <p id="trMeta" class="muted" style="margin:8px 0 0;">{{ tr_meta }}</p>
         </div>
 
         <div class="card">
@@ -1062,7 +1065,7 @@ def run_admin_action(action: str):
     return False, "Unknown action", action
 
 
-def build_page(extra_scan_dir: str, do_resync: bool):
+def build_page(extra_scan_dir: str, do_resync: bool, tr_input: str = "", tr_source: str = "en", tr_target: str = "es", tr_output: str = "", tr_meta: str = ""):
     roots = build_roots(extra_scan_dir)
     paths = scan_zims(roots)
     sync_msg = sync_all_loaded(paths) if do_resync else ""
@@ -1111,6 +1114,11 @@ def build_page(extra_scan_dir: str, do_resync: bool):
         translator_status=status,
         translator_offline_warning=warning,
         health_summary=health_summary,
+        tr_input=tr_input,
+        tr_source=tr_source,
+        tr_target=tr_target,
+        tr_output=tr_output,
+        tr_meta=tr_meta,
     )
 
 
@@ -1118,7 +1126,12 @@ def build_page(extra_scan_dir: str, do_resync: bool):
 def index():
     scan_dir = request.args.get("scan_dir", "")
     do_resync = request.args.get("resync", "1") == "1"
-    return build_page(scan_dir, do_resync)
+    tr_input = request.args.get("tr_input", "")
+    tr_source = request.args.get("tr_source", "en")
+    tr_target = request.args.get("tr_target", "es")
+    tr_output = request.args.get("tr_output", "")
+    tr_meta = request.args.get("tr_meta", "")
+    return build_page(scan_dir, do_resync, tr_input, tr_source, tr_target, tr_output, tr_meta)
 
 
 @app.get("/help")
@@ -1200,6 +1213,36 @@ def api_wiki_parse():
         return jsonify({"text": wiki_parse(url)})
     except Exception as e:
         return jsonify({"error": str(e), "text": ""}), 500
+
+
+@app.post("/translate_form")
+def translate_form():
+    text = (request.form.get("text") or "").strip()
+    source = (request.form.get("source") or "auto").strip()
+    target = (request.form.get("target") or "en").strip()
+    tr_output = ""
+    tr_meta = ""
+
+    if text and target:
+        result = offline_translate(text, source, target)
+        if result.get("error"):
+            tr_meta = result.get("error")
+        else:
+            tr_output = result.get("translation", "")
+            tr_meta = f"engine: {result.get('engine','offline')} • detected: {result.get('detected', source)}"
+    elif not text:
+        tr_meta = "Enter text to translate."
+
+    qs = urlencode({
+        "resync": "0",
+        "tr_input": text,
+        "tr_source": source,
+        "tr_target": target,
+        "tr_output": tr_output,
+        "tr_meta": tr_meta,
+    })
+    from flask import redirect
+    return redirect(f"/?{qs}")
 
 
 @app.post("/api/translate")
