@@ -491,7 +491,6 @@ HTML = """
             <textarea id="trInput" name="text" style="margin-top:10px;" placeholder="Type what one person says (or paste any text)...">{{ tr_input }}</textarea>
             <div class="row" style="margin-top:6px;">
               <button class="btn primary" type="submit" formaction="/translate_form">Translate</button>
-              <button class="btn" type="submit" formaction="/translate_form">Translate (reliable)</button>
               <button class="btn" type="button" onclick="document.getElementById('trInput').value = document.getElementById('trOutput').value || ''">Use Output as Next Input</button>
             </div>
           </form>
@@ -1202,17 +1201,17 @@ def go_library():
 
 @app.get("/go/water")
 def go_water():
-    return redirect('/?qa=water#wiki-search')
+    return redirect(f"http://{host_ip()}:8080/search?pattern=water%20purification")
 
 
 @app.get("/go/firstaid")
 def go_firstaid():
-    return redirect('/?qa=firstaid#wiki-search')
+    return redirect(f"http://{host_ip()}:8080/search?pattern=first%20aid")
 
 
 @app.get("/go/shelter")
 def go_shelter():
-    return redirect('/?qa=shelter#wiki-search')
+    return redirect(f"http://{host_ip()}:8080/search?pattern=shelter%20building")
 
 
 @app.get("/go/emergency-phrase")
