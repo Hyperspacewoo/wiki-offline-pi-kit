@@ -20,9 +20,14 @@ Unified Flow
 Default discovery roots:
 - `/mnt/wiki-ssd`
 - `~/wiki/zim`
-- `~/.openclaw/workspace/wiki-offline-pi-kit/zims`  (canonical local bundle folder)
-- `~/.openclaw/workspace/wiki-offline-pi-kit`
+- `<WIKI_KIT_ROOT>/zims`  (canonical local bundle folder)
+- `<WIKI_KIT_ROOT>`
 - + optional extra directory entered in dashboard
+
+Canonical layout vars:
+- `WIKI_KIT_ROOT`: where the bundle repo is installed
+- `WIKI_RUNTIME_ROOT`: runtime mutable data (venv, maps config/data, active zims)
+- `/etc/default/wiki-offline-kit`: shared env used by all services
 
 Project structure note
 ----------------------

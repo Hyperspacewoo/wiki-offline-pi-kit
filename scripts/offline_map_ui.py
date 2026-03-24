@@ -6,7 +6,8 @@ import os
 
 app = Flask(__name__)
 
-MAP_ROOT = Path.home() / "wiki/maps"
+RUNTIME_ROOT = Path(os.environ.get("WIKI_RUNTIME_ROOT", Path.home() / "wiki"))
+MAP_ROOT = Path(os.environ.get("WIKI_MAPS_DIR", RUNTIME_ROOT / "maps"))
 DATA_DIR = MAP_ROOT / "data"
 STATIC_DIR = MAP_ROOT / "static"
 CONFIG_FILE = MAP_ROOT / "config.json"

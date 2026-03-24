@@ -6,6 +6,10 @@ if [[ $# -lt 1 ]]; then
   exit 1
 fi
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "${SCRIPT_DIR}/layout.sh"
+
 ZIMS=("$@")
 for zim in "${ZIMS[@]}"; do
   if [[ ! -f "$zim" ]]; then
@@ -20,12 +24,10 @@ if [[ -z "$KIWIX_BIN" ]]; then
   exit 1
 fi
 
-RUN_USER="$(id -un)"
-LIST_FILE="/home/${RUN_USER}/wiki/data/active_zims.txt"
-WRAPPER="/home/${RUN_USER}/wiki/scripts/kiwix-start-from-list.sh"
-
-mkdir -p "$(dirname "$LIST_FILE")"
-printf "%s\n" "${ZIMS[@]}" > "$LIST_FILE"
+ensure_wiki_layout
+printf "%s\n" "${ZIMS[@]}" > "${ACTIVE_ZIMS_FILE}"
+write_layout_env_file "${WIKI_RUNTIME_ROOT}/layout.env"
+sudo install -m 0644 "${WIKI_RUNTIME_ROOT}/layout.env" /etc/default/wiki-offline-kit
 
 echo "Creating /etc/systemd/system/kiwix.service"
 sudo tee /etc/systemd/system/kiwix.service > /dev/null <<EOF
@@ -37,8 +39,9 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=${RUN_USER}
-WorkingDirectory=/home/${RUN_USER}
-ExecStart=${WRAPPER} ${LIST_FILE} 8080
+EnvironmentFile=/etc/default/wiki-offline-kit
+WorkingDirectory=${WIKI_RUNTIME_ROOT}
+ExecStart=${KIWIX_WRAPPER} ${ACTIVE_ZIMS_FILE} 8080
 Restart=always
 RestartSec=3
 

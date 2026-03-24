@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-MAP_ROOT="$HOME/wiki/maps"
-STATIC_DIR="$MAP_ROOT/static"
-DATA_DIR="$MAP_ROOT/data"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "${SCRIPT_DIR}/layout.sh"
+
+MAP_ROOT="${WIKI_MAPS_DIR}"
+STATIC_DIR="${MAP_ROOT}/static"
+DATA_DIR="${MAP_ROOT}/data"
 
 mkdir -p "$STATIC_DIR" "$DATA_DIR"
 

@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-LIST_FILE="${1:-$HOME/wiki/data/active_zims.txt}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "${SCRIPT_DIR}/layout.sh"
+
+LIST_FILE="${1:-$ACTIVE_ZIMS_FILE}"
 PORT="${2:-8080}"
 
 if [[ ! -f "$LIST_FILE" ]]; then

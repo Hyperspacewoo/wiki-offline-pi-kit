@@ -18,19 +18,21 @@ def no_store(resp):
     resp.headers["Expires"] = "0"
     return resp
 
-LIST_FILE = Path.home() / "wiki/data/active_zims.txt"
-KIWIX_BASE = "http://127.0.0.1:8080"
+KIT_ROOT = Path(os.environ.get("WIKI_KIT_ROOT", Path(__file__).resolve().parent.parent))
+RUNTIME_ROOT = Path(os.environ.get("WIKI_RUNTIME_ROOT", Path.home() / "wiki"))
+LIST_FILE = Path(os.environ.get("ACTIVE_ZIMS_FILE", RUNTIME_ROOT / "data/active_zims.txt"))
+KIWIX_BASE = os.environ.get("KIWIX_BASE", "http://127.0.0.1:8080")
 DEFAULT_ROOTS = [
     Path("/mnt/wiki-ssd"),
-    Path.home() / "wiki/zim",
-    Path.home() / ".openclaw/workspace/wiki-offline-pi-kit/zims",
-    Path.home() / ".openclaw/workspace/wiki-offline-pi-kit",
+    RUNTIME_ROOT / "zim",
+    KIT_ROOT / "zims",
+    KIT_ROOT,
 ]
 
 EBOOK_ROOTS = [
     Path("/mnt/wiki-ssd/ebooks"),
-    Path.home() / "wiki/ebooks",
-    Path.home() / ".openclaw/workspace/wiki-offline-pi-kit/ebooks",
+    RUNTIME_ROOT / "ebooks",
+    KIT_ROOT / "ebooks",
 ]
 EBOOK_EXTS = {".pdf", ".epub", ".mobi", ".azw3", ".txt", ".md"}
 
@@ -390,9 +392,9 @@ HTML = """
 
     <div class="card">
       <div class="row">
-        <a class="btn" href="http://{{ host_ip }}:8080/search?pattern=water%20purification" target="_blank">💧 Water Purification</a>
-        <a class="btn" href="http://{{ host_ip }}:8080/search?pattern=first%20aid" target="_blank">🩹 First Aid</a>
-        <a class="btn" href="http://{{ host_ip }}:8080/search?pattern=shelter%20building" target="_blank">🏕️ Shelter</a>
+        <a class="btn" href="/go/water" target="_blank">💧 Water Purification</a>
+        <a class="btn" href="/go/firstaid" target="_blank">🩹 First Aid</a>
+        <a class="btn" href="/go/shelter" target="_blank">🏕️ Shelter</a>
         <a class="btn" href="/?qa=translate#translator">🈺 Emergency Phrase</a>
       </div>
       <p id="quickActionStatus" class="muted" style="margin-top:8px;">{{ qa_status or 'Tap any action to jump instantly.' }}</p>
@@ -829,8 +831,35 @@ def resolve_open_href(filename: str, title: str, content_map: dict):
     return f"/content/{quote(Path(filename).stem)}"
 
 
+def preferred_search_content_id():
+    """Pick a single content id so Kiwix search doesn't fail in multi-language setups."""
+    cmap = kiwix_content_map()
+    if not cmap:
+        return "wikipedia"
+
+    hrefs = list(cmap.values())
+
+    # prefer practical emergency-friendly sources first
+    for preferred in ["wikimedicine", "wikipedia", "openstreetmap", "stackoverflow"]:
+        for h in hrefs:
+            if f"/content/{preferred}" in h:
+                return preferred
+
+    # fallback: first available /content/<id>
+    for h in hrefs:
+        if h.startswith("/content/"):
+            return h.split("/content/", 1)[1].split("/", 1)[0]
+
+    return "wikipedia"
+
+
 def wiki_search(query: str, limit: int = 8):
-    r = requests.get(f"{KIWIX_BASE}/search", params={"pattern": query}, timeout=20)
+    content_id = preferred_search_content_id()
+    r = requests.get(
+        f"{KIWIX_BASE}/search",
+        params={"content": content_id, "pattern": query},
+        timeout=20,
+    )
     r.raise_for_status()
     soup = BeautifulSoup(r.text, "lxml")
     out, seen = [], set()
@@ -1034,7 +1063,7 @@ def health_summary_text():
             statuses.append(f"{svc.split('.')[0]}:ok")
         except Exception:
             statuses.append(f"{svc.split('.')[0]}:check")
-    if Path.home().joinpath("wiki/ebooks").exists():
+    if (RUNTIME_ROOT / "ebooks").exists():
         statuses.append("ebooks:ok")
     else:
         statuses.append("ebooks:missing")
@@ -1042,7 +1071,7 @@ def health_summary_text():
 
 
 def run_admin_action(action: str):
-    root = Path.home() / ".openclaw/workspace/wiki-offline-pi-kit"
+    root = KIT_ROOT
     scripts = root / "scripts"
 
     def run(cmd, timeout=120):
@@ -1062,7 +1091,7 @@ def run_admin_action(action: str):
         ok, out = run(["bash", str(scripts / "verify_checksums.sh")], timeout=90)
         return ok, ("Integrity verified" if ok else "Integrity check failed"), out
     if action == "backup_usb":
-        usb_base = Path("/media/void/94AA7041AA7021C2/OfflineKnowledgeKit")
+        usb_base = Path(os.environ.get("WIKI_USB_ROOT", "/media/void/94AA7041AA7021C2/OfflineKnowledgeKit"))
         if not usb_base.exists():
             return False, "Backup drive not connected", str(usb_base)
         if not os.access(str(usb_base), os.W_OK):
@@ -1070,14 +1099,15 @@ def run_admin_action(action: str):
         ok, out = run(["bash", str(scripts / "sync_external_drive.sh")], timeout=180)
         return ok, ("Backup completed" if ok else "Backup failed"), out
     if action == "sync_usb":
-        usb = "/media/void/94AA7041AA7021C2/OfflineKnowledgeKit/wiki-offline-pi-kit/zims"
-        if not Path(usb).exists():
-            return False, "USB content not found", usb
-        ok, out = run(["bash", str(scripts / "import_zims_from_usb.sh"), usb], timeout=180)
+        usb_root = Path(os.environ.get("WIKI_USB_ROOT", "/media/void/94AA7041AA7021C2/OfflineKnowledgeKit"))
+        usb = usb_root / "wiki-offline-pi-kit/zims"
+        if not usb.exists():
+            return False, "USB content not found", str(usb)
+        ok, out = run(["bash", str(scripts / "import_zims_from_usb.sh"), str(usb)], timeout=180)
         return ok, ("USB import completed" if ok else "USB import failed"), out
     if action == "setup_dirs":
         created = []
-        for p in [Path.home()/"wiki/ebooks", root/"ebooks", Path.home()/"wiki/zim"]:
+        for p in [RUNTIME_ROOT / "ebooks", root / "ebooks", RUNTIME_ROOT / "zim"]:
             p.mkdir(parents=True, exist_ok=True)
             created.append(str(p))
         return True, "Library folders ready", "\n".join(created)
@@ -1209,17 +1239,20 @@ def go_library():
 
 @app.get("/go/water")
 def go_water():
-    return redirect(f"http://{host_ip()}:8080/search?pattern=water%20purification")
+    cid = preferred_search_content_id()
+    return redirect(f"http://{host_ip()}:8080/search?content={quote(cid)}&pattern=water%20purification")
 
 
 @app.get("/go/firstaid")
 def go_firstaid():
-    return redirect(f"http://{host_ip()}:8080/search?pattern=first%20aid")
+    cid = preferred_search_content_id()
+    return redirect(f"http://{host_ip()}:8080/search?content={quote(cid)}&pattern=first%20aid")
 
 
 @app.get("/go/shelter")
 def go_shelter():
-    return redirect(f"http://{host_ip()}:8080/search?pattern=shelter%20building")
+    cid = preferred_search_content_id()
+    return redirect(f"http://{host_ip()}:8080/search?content={quote(cid)}&pattern=shelter%20building")
 
 
 @app.get("/go/emergency-phrase")

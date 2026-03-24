@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-OUT="${1:-$HOME/wiki/maps/data/us_places.tsv}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "${SCRIPT_DIR}/layout.sh"
+
+OUT="${1:-${WIKI_MAPS_DIR}/data/us_places.tsv}"
 TMP_DIR="$(mktemp -d)"
 ZIP_URL="https://download.geonames.org/export/dump/US.zip"
 

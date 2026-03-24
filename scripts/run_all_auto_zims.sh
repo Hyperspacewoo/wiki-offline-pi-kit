@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ZIM_DIR="${1:-/mnt/wiki-ssd}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "${SCRIPT_DIR}/layout.sh"
+
+ZIM_DIR="${1:-$WIKI_ZIM_DIR}"
 
 if [[ ! -d "$ZIM_DIR" ]]; then
   echo "Error: directory not found: $ZIM_DIR"
@@ -20,8 +24,6 @@ for z in "${ZIMS[@]}"; do
   echo " - $z"
 done
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
-
 chmod +x ./run_all_on_pi.sh
 ./run_all_on_pi.sh "${ZIMS[@]}"
