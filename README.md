@@ -40,3 +40,17 @@ Then open:
 - Dashboard: `http://<HOST_IP>:8090`
 - Kiwix: `http://<HOST_IP>:8080`
 - Offline map: `http://<HOST_IP>:8091`
+
+## Important Safety & License Notice
+
+This project redistributes third-party offline knowledge content (including medical/infrastructure/technical materials). Content is provided for informational purposes only and may be incomplete, outdated, or inaccurate.
+
+- Not medical or professional advice
+- In emergencies, contact local emergency services / qualified professionals
+- Verify critical first-aid, water-treatment, and shelter guidance against current local official sources
+
+Third-party content remains subject to original licenses and attribution terms. See:
+- `docs/THIRD_PARTY_CONTENT_NOTICE.md`
+- `docs/SAFETY_AND_MEDICAL_DISCLAIMER.md`
+- `docs/TRADEMARK_NOTICE.md`
+- `docs/CONTENT_TAKEDOWN_POLICY.md`
