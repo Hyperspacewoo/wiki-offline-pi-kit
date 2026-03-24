@@ -26,7 +26,14 @@ Then open:
 ./scripts/doctor.sh
 ./scripts/verify_checksums.sh
 ./scripts/sync_external_drive.sh
+./scripts/qa_smoke.sh
 ```
+
+## QA + Release Readiness
+
+- Launch checklist: `docs/LAUNCH_CHECKLIST.md`
+- Offline test matrix: `docs/OFFLINE_TEST_MATRIX.md`
+- Fast QA runbook: `docs/QA_RUNBOOK.md`
 
 ## Main URLs
 
