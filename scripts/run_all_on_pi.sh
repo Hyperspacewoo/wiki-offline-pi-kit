@@ -19,6 +19,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 chmod +x ./install_pi_wiki.sh ./setup_kiwix_service.sh ./setup_zim_ui_service.sh ./setup_sudoers_for_zim_ui.sh ./setup_offline_map_service.sh ./setup_offline_map_assets.sh ./setup_offline_place_index.sh ./download_osm_pmtiles.sh ./wikiask.py ./zim_selector_ui.py ./offline_map_ui.py ./kiwix-start-from-list.sh
+chmod +x ./start_llama_server.sh ./setup_llama_service.sh
 
 echo "==> Running installer..."
 ./install_pi_wiki.sh
@@ -36,6 +37,9 @@ echo "==> Setting up offline map assets + service (port 8091)..."
 ./setup_offline_map_assets.sh
 ./setup_offline_map_service.sh
 
+echo "==> Setting up llama.cpp AI service (port 8092)..."
+./setup_llama_service.sh
+
 echo "==> Downloading starter OSM extract (NYC bbox, maxzoom 14)..."
 ./download_osm_pmtiles.sh
 
@@ -47,9 +51,11 @@ source "$HOME/.bashrc" || true
 wiki-status || true
 zim-ui-status || true
 map-ui-status || true
+llama-status || true
 
 echo "\nAll done."
 echo "Kiwix: http://<PI_IP>:8080"
 echo "ZIM selector UI: http://<PI_IP>:8090"
 echo "Offline map UI: http://<PI_IP>:8091"
+echo "Offline AI UI/API: http://<PI_IP>:8092"
 echo "Use: wiki-ask \"quantum entanglement\" --top 5 --open 1 --chars 2500"

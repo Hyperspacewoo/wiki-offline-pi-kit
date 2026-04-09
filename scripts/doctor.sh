@@ -23,7 +23,7 @@ else
 fi
 
 if command -v systemctl >/dev/null 2>&1; then
-  for svc in kiwix.service zim-selector.service offline-map-ui.service; do
+  for svc in kiwix.service zim-selector.service offline-map-ui.service llama-server.service; do
     if systemctl is-active --quiet "$svc"; then ok "service active: $svc"; else warn "service inactive: $svc"; fi
   done
 
@@ -37,11 +37,14 @@ if command -v systemctl >/dev/null 2>&1; then
   if systemctl cat offline-map-ui.service >/dev/null 2>&1; then
     systemctl cat offline-map-ui.service | grep -q "${WIKI_KIT_ROOT}/scripts/offline_map_ui.py" && ok "map-ui uses kit script path" || warn "map-ui not using expected kit script path"
   fi
+  if systemctl cat llama-server.service >/dev/null 2>&1; then
+    systemctl cat llama-server.service | grep -q "${LLAMA_BIN}" && ok "llama-server uses expected binary" || warn "llama-server not using expected binary (${LLAMA_BIN})"
+  fi
 else
   warn "systemctl not available"
 fi
 
-for p in 8080 8090 8091; do
+for p in 8080 8090 8091 8092; do
   if ss -ltn 2>/dev/null | grep -q ":$p "; then ok "port listening: $p"; else warn "port not listening: $p"; fi
 done
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from flask import Flask, request, render_template_string, jsonify, send_file, abort, redirect
+from flask import Flask, Response, request, render_template_string, jsonify, send_file, abort, redirect
 from pathlib import Path
 import subprocess
 import requests
@@ -7,6 +7,8 @@ from bs4 import BeautifulSoup
 from urllib.parse import quote, urlencode
 import shlex
 import os
+import json
+import re
 
 app = Flask(__name__)
 
@@ -38,142 +40,11 @@ EBOOK_EXTS = {".pdf", ".epub", ".mobi", ".azw3", ".txt", ".md"}
 
 HTML = """
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Offgrid Intel Kit • Luxury Offline Console</title>
-  <style>
-    :root {
-      --bg:#0b1020;
-      --panel:#121a2b;
-      --panel2:#16223e;
-      --text:#e6eaf2;
-      --muted:#a9b5d1;
-      --border:#2a3b63;
-      --primary:#4f7cff;
-      --accent:#2dd4bf;
-      --warn:#f59e0b;
-      --danger:#ef4444;
-      --ok:#22c55e;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin:0;
-      font-family: Inter, Segoe UI, Arial, sans-serif;
-      background:
-        radial-gradient(1200px 600px at 10% -20%, #243b70 0, transparent 60%),
-        radial-gradient(900px 420px at 95% 0%, #183357 0, transparent 60%),
-        var(--bg);
-      color:var(--text);
-    }
-    .wrap { max-width:1240px; margin:0 auto; padding:24px; }
-    .hero, .card {
-      border:1px solid var(--border);
-      background:linear-gradient(180deg,var(--panel),var(--panel2));
-      border-radius:16px;
-      padding:16px;
-      margin-bottom:14px;
-      box-shadow: 0 10px 30px rgba(2,8,23,.22);
-    }
-    .hero h1 { margin:0 0 6px; font-size:24px; }
-    .muted { color:var(--muted); font-size:13px; }
-    .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-    .grow { flex:1; }
-
-    .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:10px; }
-    .stat { border:1px solid var(--border); border-radius:10px; padding:10px; background:rgba(255,255,255,0.02); }
-    .stat .k { color:var(--muted); font-size:12px; }
-    .stat .v { font-size:20px; font-weight:700; }
-
-    .btn {
-      border:1px solid var(--border);
-      border-radius:12px;
-      padding:9px 13px;
-      background:#1d2f57;
-      color:#e7edff;
-      cursor:pointer;
-      text-decoration:none;
-      display:inline-block;
-      transition: all .18s ease;
-    }
-    .btn:hover { filter:brightness(1.08); transform: translateY(-1px); }
-    .btn.primary { background:linear-gradient(180deg,#4f8fff,#3b73d7); border-color:#6aa2ff; }
-    .btn.mapcta {
-      background: linear-gradient(180deg,#26d0a4,#138d6f);
-      border-color:#50e1bd;
-      font-weight:700;
-      box-shadow:0 0 0 2px rgba(80,225,189,.18), 0 6px 20px rgba(19,141,111,.35);
-    }
-
-    input[type=text], select, textarea {
-      width:100%;
-      padding:9px 11px;
-      border:1px solid var(--border);
-      border-radius:10px;
-      background:#0f1830;
-      color:var(--text);
-      font-family:inherit;
-    }
-    textarea { min-height:88px; resize:vertical; }
-
-    .chips { display:flex; gap:6px; flex-wrap:wrap; margin:8px 0 0; }
-    .chip {
-      border:1px solid var(--border);
-      border-radius:999px;
-      padding:4px 10px;
-      background:#122244;
-      color:#dce7ff;
-      cursor:pointer;
-      font-size:12px;
-    }
-    .chip.active { background:#2c4f96; border-color:#6f9dff; }
-
-    .table { max-height:56vh; overflow:auto; border:1px solid var(--border); border-radius:10px; }
-    table { width:100%; border-collapse:collapse; min-width:860px; }
-    th, td { padding:9px; border-bottom:1px solid #24345d; text-align:left; font-size:14px; }
-    th { position:sticky; top:0; background:#172549; }
-    .badge { font-size:11px; border:1px solid var(--border); border-radius:999px; padding:2px 8px; }
-
-    .main-layout { display:grid; grid-template-columns:2fr 1fr; gap:12px; }
-    .split { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-
-    .translator-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-    .status-dot {
-      width:8px; height:8px; border-radius:999px; display:inline-block; margin-right:6px;
-      background:var(--ok);
-      box-shadow:0 0 0 5px rgba(34,197,94,.15);
-    }
-    .status-dot.warn { background:var(--warn); box-shadow:0 0 0 5px rgba(245,158,11,.15); }
-    .pill {
-      font-size:11px;
-      border:1px solid #2f4b80;
-      background:#0f1c3c;
-      color:#b8ccf8;
-      border-radius:999px;
-      padding:3px 8px;
-    }
-
-    pre {
-      margin:0;
-      white-space:pre-wrap;
-      border:1px solid var(--border);
-      border-radius:10px;
-      padding:10px;
-      background:#0f1830;
-      color:#dbe7ff;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size:12px;
-      line-height:1.45;
-    }
-
-    @media (max-width: 1100px) {
-      .grid{grid-template-columns:1fr 1fr;}
-      .split{grid-template-columns:1fr;}
-      .main-layout{grid-template-columns:1fr;}
-      .translator-grid{grid-template-columns:1fr;}
-    }
-  </style>
+  <title>Offgrid Intel Kit • Offline Console</title>
   <script>
     let activeCategory = 'all';
 
@@ -227,7 +98,7 @@ HTML = """
       applyFilters();
     }
 
-    async function rescan() {
+    function rescan() {
       const extra = (document.getElementById('extraDir').value || '').trim();
       window.location = '/?scan_dir=' + encodeURIComponent(extra) + '&resync=1';
     }
@@ -242,7 +113,7 @@ HTML = """
           body: JSON.stringify({action})
         });
         const data = await r.json();
-        if (out) out.textContent = (data.ok ? '✅ ' : '⚠️ ') + (data.message || '') + (data.output ? '\n\n' + data.output : '');
+        if (out) out.textContent = (data.ok ? '✅ ' : '⚠️ ') + (data.message || '') + (data.output ? '\\n\\n' + data.output : '');
       } catch (e) {
         if (out) out.textContent = 'Failed: ' + e;
       }
@@ -259,13 +130,20 @@ HTML = """
         const rows = await fetch('/api/wiki/search?q=' + encodeURIComponent(q)).then(r => r.json());
         if (!rows.length) { list.innerHTML = '<div class="muted">No results.</div>'; return; }
         list.innerHTML = rows.map((r, i) => `
-          <div style="padding:8px;border-bottom:1px solid #24345d;">
-            <div><strong>${i+1}. ${r.title}</strong></div>
-            <div class="muted"><a href="${r.url}" target="_blank">Open full article</a></div>
-            <button class="btn" style="margin-top:6px;" onclick="wikiParse('${encodeURIComponent(r.url)}')">Parse excerpt</button>
+          <div class="search-item">
+            <div class="search-title">${i+1}. ${r.title}</div>
+            <div class="muted small"><a href="${r.url}" target="_blank">Open full article</a></div>
+            <button class="btn btn-soft" onclick="wikiParse('${encodeURIComponent(r.url)}')">Parse excerpt</button>
           </div>
         `).join('');
       } catch (e) { list.innerHTML = '<div class="muted">Search failed.</div>'; }
+    }
+    function useParsedForAI() {
+      const parsed = document.getElementById('wikiParsed');
+      const ctx = document.getElementById('aiContext');
+      if (parsed && ctx) {
+        ctx.value = parsed.textContent || '';
+      }
     }
 
     async function wikiParse(url) {
@@ -277,32 +155,6 @@ HTML = """
       } catch (e) { parsed.textContent = 'Parse failed.'; }
     }
 
-    function quickAction(kind) {
-      const status = document.getElementById('quickActionStatus');
-      if (kind === 'translate') {
-        document.getElementById('trInput').value = 'I need medical help';
-        document.getElementById('trSource').value = 'en';
-        document.getElementById('trTarget').value = 'es';
-        const t = document.getElementById('translator');
-        if (t) t.scrollIntoView({behavior:'smooth', block:'start'});
-        if (status) status.textContent = 'Prepared emergency translation phrase.';
-        return;
-      }
-      const queries = {
-        water: 'water purification',
-        firstaid: 'first aid',
-        shelter: 'shelter building'
-      };
-      const q = queries[kind] || '';
-      if (!q) return;
-      const input = document.getElementById('wikiQ');
-      input.value = q;
-      const section = document.getElementById('wiki-search');
-      if (section) section.scrollIntoView({behavior:'smooth', block:'start'});
-      wikiSearch();
-      if (status) status.textContent = `Searching for: ${q}`;
-    }
-
     function swapTranslatorLangs() {
       const src = document.getElementById('trSource');
       const dst = document.getElementById('trTarget');
@@ -311,38 +163,32 @@ HTML = """
       dst.value = t;
     }
 
-    async function translateText() {
-      const input = (document.getElementById('trInput').value || '').trim();
-      const source = document.getElementById('trSource').value;
-      const target = document.getElementById('trTarget').value;
-      const output = document.getElementById('trOutput');
-      const meta = document.getElementById('trMeta');
-      if (!input) { output.value = ''; meta.textContent = 'Enter text to translate.'; return; }
-      output.value = 'Translating…';
-      meta.textContent = '';
-      try {
-        const res = await fetch('/api/translate', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({text: input, source, target})
+    function initReveals() {
+      const nodes = document.querySelectorAll('.reveal');
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) entry.target.classList.add('show');
         });
-        const data = await res.json();
-        if (!res.ok || data.error) {
-          output.value = '';
-          meta.textContent = data.error || 'Translation failed.';
-          return;
-        }
-        output.value = data.translation || '';
-        const conf = data.confidence ? ` • confidence: ${Math.round(data.confidence * 100)}%` : '';
-        meta.textContent = `engine: ${data.engine || 'offline'} • detected: ${data.detected || source}${conf}`;
-      } catch (e) {
-        output.value = '';
-        meta.textContent = 'Translation failed.';
-      }
+      }, { threshold: 0.10 });
+      nodes.forEach(n => io.observe(n));
+    }
+
+    function initParallax() {
+      const nodes = document.querySelectorAll('.parallax');
+      window.addEventListener('scroll', () => {
+        const y = window.scrollY;
+        nodes.forEach(n => {
+          const speed = parseFloat(n.dataset.speed || '0.04');
+          n.style.transform = `translate3d(0, ${y * speed}px, 0)`;
+        });
+      }, { passive: true });
     }
 
     document.addEventListener('DOMContentLoaded', () => {
       applyFilters();
+      sortRows();
+      initReveals();
+      initParallax();
       const filterInput = document.getElementById('q');
       document.addEventListener('keydown', (e) => {
         if (e.key === '/' && document.activeElement !== filterInput) {
@@ -350,69 +196,421 @@ HTML = """
           filterInput.focus();
         }
       });
+      initMiniAiWidget();
     });
-  </script>
+
+    function mergeStreamChunk(existing, chunk) {
+      if (!existing) return chunk;
+      if (!chunk) return existing;
+      const last = existing.slice(-1);
+      const first = chunk.slice(0, 1);
+      const needsSpace = /[A-Za-z0-9]/.test(last) && /[A-Za-z0-9]/.test(first);
+      return existing + (needsSpace ? ' ' : '') + chunk;
+    }
+
+    function initMiniAiWidget() {
+      const prompt = document.getElementById('miniAiPrompt');
+      const send = document.getElementById('miniAiSend');
+      const output = document.getElementById('miniAiOutput');
+      const spinner = document.getElementById('miniAiSpinner');
+      const modelSel = document.getElementById('miniAiModel');
+      if (!prompt || !send || !output) return;
+
+      async function run() {
+        const value = (prompt.value || '').trim();
+        if (!value) return;
+        if (output.textContent.includes('Offline AI ready.')) output.innerHTML = '';
+        const userBubble = document.createElement('div');
+        userBubble.className = 'chat-bubble user';
+        userBubble.textContent = value;
+        output.appendChild(userBubble);
+        prompt.value = '';
+        output.scrollTop = output.scrollHeight;
+        if (spinner) spinner.style.display = 'inline-flex';
+        const assistantBubble = document.createElement('div');
+        assistantBubble.className = 'chat-bubble assistant';
+        assistantBubble.textContent = '';
+        output.appendChild(assistantBubble);
+        output.scrollTop = output.scrollHeight;
+        try {
+          const r = await fetch('/api/ai/stream', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ prompt: value, context: '', model_choice: (modelSel ? modelSel.value : 'q8') })
+          });
+          if (!r.ok || !r.body) {
+            assistantBubble.textContent = 'Offline AI request failed.';
+          } else {
+            const reader = r.body.getReader();
+            const decoder = new TextDecoder();
+            while (true) {
+              const { value: chunkValue, done } = await reader.read();
+              if (done) break;
+              const chunk = decoder.decode(chunkValue, { stream: true });
+              assistantBubble.textContent += chunk;
+              output.scrollTop = output.scrollHeight;
+            }
+            if (!assistantBubble.textContent.trim()) {
+              assistantBubble.textContent = 'No output returned.';
+            }
+          }
+        } catch (e) {
+          assistantBubble.textContent = 'Offline AI request failed.';
+        } finally {
+          if (spinner) spinner.style.display = 'none';
+        }
+      }
+
+      send.addEventListener('click', run);
+      prompt.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          run();
+        }
+      });
+    }
+
+</script>
+  <style>
+    :root {
+      --bg: #08111f;
+      --bg2: #0d1728;
+      --panel: rgba(255,255,255,.08);
+      --panel-strong: rgba(255,255,255,.10);
+      --line: rgba(148,163,184,.18);
+      --text: #eef4ff;
+      --muted: #9fb0cb;
+      --soft: #cdd8ea;
+      --accent: #7dd3fc;
+      --accent-2: #5eead4;
+      --shadow: 0 16px 40px rgba(2,6,23,.32);
+      --radius: 24px;
+      --radius-sm: 16px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(1000px 600px at 8% -5%, rgba(125,211,252,.10), transparent 60%),
+        radial-gradient(900px 540px at 100% 0%, rgba(94,234,212,.08), transparent 62%),
+        linear-gradient(180deg, var(--bg), var(--bg2));
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    button, input, select, textarea { font: inherit; }
+    .bg-orb {
+      position: fixed;
+      border-radius: 999px;
+      filter: blur(80px);
+      pointer-events: none;
+      opacity: .8;
+      z-index: 0;
+    }
+    .orb-1 { top: -110px; left: -80px; width: 360px; height: 360px; background: rgba(125,211,252,.12); }
+    .orb-2 { top: 80px; right: -120px; width: 420px; height: 420px; background: rgba(94,234,212,.10); }
+    .grid-overlay {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+      background-size: 32px 32px;
+      opacity: .24;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .shell {
+      position: relative;
+      z-index: 5;
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .glass {
+      background: linear-gradient(180deg, rgba(17,24,39,.88), rgba(10,15,26,.80));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+    }
+    .section { padding: 24px; margin-bottom: 16px; }
+    .hero-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      color: var(--soft);
+      font-size: 11px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3, p { margin: 0; }
+    .hero-title { font-size: clamp(2rem, 5vw, 4rem); line-height: 1.02; letter-spacing: -.03em; margin-top: 16px; }
+    .hero-copy { max-width: 760px; margin-top: 14px; color: var(--muted); line-height: 1.7; }
+    .hero-actions, .action-row, .quick-grid, .button-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .hero-actions { margin-top: 18px; }
+    .status-card { min-width: 280px; padding: 18px; border-radius: 20px; }
+    .status-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .tiny { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      font-size: 12px;
+      color: var(--soft);
+    }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: #34d399; box-shadow: 0 0 0 6px rgba(52,211,153,.12); }
+    .dot.warn { background: #fbbf24; box-shadow: 0 0 0 6px rgba(251,191,36,.12); }
+    .stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 22px; }
+    .stat-card { padding: 18px; border-radius: 20px; }
+    .stat-label { color: var(--muted); font-size: 12px; }
+    .stat-value { font-size: 30px; font-weight: 600; margin-top: 8px; letter-spacing: -.03em; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 44px;
+      padding: 11px 16px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      cursor: pointer;
+      transition: transform .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
+    }
+    .btn:hover { transform: translateY(-1px); background: rgba(255,255,255,.09); }
+    .btn-accent { background: rgba(125,211,252,.12); border-color: rgba(125,211,252,.30); box-shadow: 0 0 0 1px rgba(125,211,252,.10), 0 8px 24px rgba(125,211,252,.10); }
+    .btn-mint { background: rgba(94,234,212,.12); border-color: rgba(94,234,212,.26); }
+    .btn-soft { background: rgba(255,255,255,.05); }
+    .input, .select, .textarea {
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(2,6,23,.28);
+      color: var(--text);
+      padding: 14px 16px;
+      outline: none;
+    }
+    .input::placeholder, .textarea::placeholder { color: #70819e; }
+    .input:focus, .select:focus, .textarea:focus { border-color: rgba(125,211,252,.36); box-shadow: 0 0 0 4px rgba(125,211,252,.08); }
+    .textarea { min-height: 120px; resize: vertical; }
+    .toolbar { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 16px; }
+    .chip {
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.05);
+      color: var(--soft);
+      cursor: pointer;
+      transition: all .18s ease;
+    }
+    .chip.active, .chip:hover { background: rgba(125,211,252,.12); border-color: rgba(125,211,252,.28); transform: translateY(-1px); }
+    .visible-count { font-size: 12px; color: var(--muted); }
+    .layout { display: grid; grid-template-columns: 1.7fr 1fr; gap: 16px; }
+    .full-width { grid-column: 1 / -1; }
+    .table-wrap { margin-top: 18px; overflow: auto; border-radius: 20px; border: 1px solid var(--line); background: rgba(2,6,23,.18); max-height: 58vh; }
+    table { width: 100%; min-width: 900px; border-collapse: collapse; }
+    th, td { padding: 16px; border-top: 1px solid rgba(255,255,255,.06); text-align: left; vertical-align: top; }
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: rgba(8,17,31,.94);
+      backdrop-filter: blur(14px);
+      border-top: none;
+      color: var(--soft);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    tbody tr:hover { background: rgba(255,255,255,.03); }
+    .file-name { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    .badge {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.05);
+      font-size: 12px;
+      color: var(--soft);
+    }
+    .path { font-size: 12px; color: #7d8da9; word-break: break-all; }
+    .side-stack { display: grid; gap: 16px; }
+    .quick-grid { display: grid; gap: 10px; }
+    .subcopy { margin-top: 8px; color: var(--muted); font-size: 14px; }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+    .panel-box {
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: rgba(2,6,23,.20);
+      padding: 16px;
+      max-height: 300px;
+      overflow: auto;
+    }
+    .search-item { padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+    .search-item:last-child { border-bottom: none; }
+    .search-title { font-weight: 600; }
+    .small { font-size: 12px; }
+    .muted { color: var(--muted); }
+    .translator-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; }
+    .pre {
+      margin-top: 14px;
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(2,6,23,.25);
+      color: var(--soft);
+      white-space: pre-wrap;
+      overflow: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .chat-shell { border-radius: 22px; border: 1px solid var(--line); background: rgba(2,6,23,.22); padding: 16px; margin-top: 16px; }
+    .chat-output { min-height: 220px; max-height: 48vh; overflow: auto; display:flex; flex-direction:column; gap:12px; }
+    .chat-bubble { max-width: 92%; border-radius: 18px; padding: 14px 16px; white-space: pre-wrap; line-height: 1.7; }
+    .chat-bubble.user { align-self: flex-end; background: rgba(125,211,252,.12); border: 1px solid rgba(125,211,252,.20); color: var(--text); }
+    .chat-bubble.assistant { align-self: flex-start; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); color: var(--text); }
+    .chat-compose { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; margin-top: 14px; }
+    .chat-spinner { display:none; align-items:center; gap:10px; color: var(--muted); font-size: 14px; margin-top: 10px; }
+    .spinner-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); animation: pulse 1s infinite ease-in-out; }
+    .spinner-dot:nth-child(2) { animation-delay: .15s; }
+    .spinner-dot:nth-child(3) { animation-delay: .3s; }
+    @keyframes pulse { 0%, 80%, 100% { transform: scale(.6); opacity: .35; } 40% { transform: scale(1); opacity: 1; } }
+    details summary { cursor: pointer; font-weight: 600; }
+    .reveal { opacity: 1; transform: none; transition: opacity .65s ease, transform .65s ease; }
+    .reveal.show { opacity: 1; transform: none; }
+
+    @media (max-width: 1100px) {
+      .layout, .split { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .toolbar { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .shell { padding: 14px; }
+      .section { padding: 18px; }
+      .stats-grid { grid-template-columns: 1fr; }
+      .translator-row { grid-template-columns: 1fr; }
+      .hero-title { font-size: 2.2rem; }
+      .btn { width: 100%; }
+      .hero-actions .btn, .action-row .btn, .button-row .btn { width: auto; }
+    }
+  </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="hero">
-      <div class="row" style="justify-content:space-between;align-items:flex-start;">
+  <div class="bg-orb orb-1 parallax" data-speed="0.05"></div>
+  <div class="bg-orb orb-2 parallax" data-speed="0.03"></div>
+  <div class="grid-overlay"></div>
+
+  <main class="shell">
+    <section class="glass section reveal">
+      <div class="hero-top">
         <div>
-          <h1>Offgrid Intel Kit</h1>
-          <p class="muted">Luxury offline intelligence console — instant access to knowledge, maps, translation, and field-ready reading.</p>
-        </div>
-        <div class="pill"><span class="status-dot {{ 'warn' if translator_offline_warning else '' }}"></span>{{ translator_status }}</div>
-      </div>
-      <div class="grid">
-        <div class="stat"><div class="k">Discovered ZIM files</div><div class="v">{{ total }}</div></div>
-        <div class="stat"><div class="k">Loaded into Kiwix</div><div class="v">{{ loaded_count }}</div></div>
-        <div class="stat"><div class="k">Storage footprint</div><div class="v">{{ total_size }}</div></div>
-        <div class="stat"><div class="k">Roots scanned</div><div class="v">{{ roots_count }}</div></div>
-      </div>
-      {% if sync_msg %}<p class="muted" style="margin-top:8px;">{{ sync_msg }}</p>{% endif %}
-    </div>
-
-    <div class="card">
-      <div class="row">
-        <a class="btn primary" href="http://{{ host_ip }}:8080" target="_blank" style="font-weight:700;">📘 Knowledge</a>
-        <a class="btn mapcta" href="http://{{ host_ip }}:8091">🗺️ Maps</a>
-        <a class="btn" href="#translator">🈯 Translate</a>
-        <a class="btn" href="/ebooks">📚 Library</a>
-      </div>
-      <div class="row" style="margin-top:8px;">
-        <a class="btn" href="/morse">📡 Morse</a>
-        <a class="btn" href="/help">Support</a>
-      </div>
-      <div class="row" style="margin-top:8px;">
-        <input id="extraDir" class="grow" type="text" placeholder="Optional extra folder to include" value="{{ scan_dir }}" />
-        <button class="btn primary" onclick="rescan()">Rescan + Sync All ZIMs</button>
-      </div>
-      <p class="muted" style="margin-top:8px;">{{ roots|join(' • ') }}</p>
-    </div>
-
-    <div class="card">
-      <div class="row">
-        <a class="btn" href="/go/water" target="_blank">💧 Water Purification</a>
-        <a class="btn" href="/go/firstaid" target="_blank">🩹 First Aid</a>
-        <a class="btn" href="/go/shelter" target="_blank">🏕️ Shelter</a>
-        <a class="btn" href="/?qa=translate#translator">🈺 Emergency Phrase</a>
-      </div>
-      <p id="quickActionStatus" class="muted" style="margin-top:8px;">{{ qa_status or 'Tap any action to jump instantly.' }}</p>
-    </div>
-
-    <div class="main-layout">
-      <div>
-        <div class="card" id="knowledge">
-          <div class="row" style="margin-bottom:8px;">
-            <input id="q" class="grow" type="text" placeholder="Filter by title/category/path... (press / to focus)" oninput="quickFilter()" />
-            <select id="sortMode" class="btn" onchange="sortRows()" style="padding:8px 10px;">
-              <option value="title_asc">Sort: Title A→Z</option>
-              <option value="title_desc">Sort: Title Z→A</option>
-              <option value="size_desc">Sort: Size ↓</option>
-              <option value="size_asc">Sort: Size ↑</option>
-            </select>
-            <button class="btn" onclick="clearFilters()">Clear</button>
+          <div class="eyebrow">Offline • Elegant • Field Ready</div>
+          <h1 class="hero-title">Offgrid Intel Kit</h1>
+          <p class="hero-copy">A minimalist offline intelligence console for knowledge, maps, translation, and field support — calmer, cleaner, and more professional without losing practical speed.</p>
+          <div class="hero-actions">
+            <a class="btn btn-accent" href="http://{{ host_ip }}:8080" target="_blank">📘 Open Knowledge</a>
+            <a class="btn btn-mint" href="http://{{ host_ip }}:8091">🗺️ Open Maps</a>
+            <a class="btn btn-soft" href="http://{{ host_ip }}:8092" target="_blank">🤖 Open AI</a>
           </div>
+        </div>
+
+        <div class="glass status-card">
+          <div class="status-head">
+            <span class="tiny">Translator</span>
+            <span class="status-pill"><span class="dot {{ 'warn' if translator_offline_warning else '' }}"></span>{{ translator_status }}</span>
+          </div>
+          <p class="subcopy">Instant access to local knowledge, offline tools, and field-ready essentials.</p>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="glass stat-card"><div class="stat-label">Discovered ZIM files</div><div class="stat-value">{{ total }}</div></div>
+        <div class="glass stat-card"><div class="stat-label">Loaded into Kiwix</div><div class="stat-value">{{ loaded_count }}</div></div>
+        <div class="glass stat-card"><div class="stat-label">Storage footprint</div><div class="stat-value">{{ total_size }}</div></div>
+        <div class="glass stat-card"><div class="stat-label">Roots scanned</div><div class="stat-value">{{ roots_count }}</div></div>
+      </div>
+      {% if sync_msg %}<p class="subcopy" style="margin-top:14px;">{{ sync_msg }}</p>{% endif %}
+    </section>
+
+    <section class="glass section reveal">
+      <div class="action-row">
+        <a class="btn btn-accent" href="http://{{ host_ip }}:8080" target="_blank">📘 Knowledge</a>
+        <a class="btn btn-mint" href="http://{{ host_ip }}:8091">🗺️ Maps</a>
+        <a class="btn btn-soft" href="http://{{ host_ip }}:8092" target="_blank">🤖 AI</a>
+        <a class="btn btn-soft" href="#translator">🈯 Translate</a>
+        <a class="btn btn-soft" href="/ebooks">📚 Library</a>
+        <a class="btn btn-soft" href="/morse">📡 Morse</a>
+        <a class="btn btn-soft" href="/help">Support</a>
+      </div>
+      <div class="toolbar" style="margin-top:16px; grid-template-columns: 1fr auto;">
+        <input id="extraDir" class="input" type="text" placeholder="Optional extra folder to include" value="{{ scan_dir }}" />
+        <button class="btn btn-accent" onclick="rescan()">Rescan + Sync All ZIMs</button>
+      </div>
+      <p class="subcopy">{{ roots|join(' • ') }}</p>
+    </section>
+
+    <section class="glass section reveal">
+      <div style="display:flex; justify-content:space-between; gap:16px; align-items:flex-start; flex-wrap:wrap;">
+        <div>
+          <h2>Offline AI</h2>
+          <p class="subcopy">Minimal live local chat widget.</p>
+        </div>
+        <div class="status-pill"><span class="dot {{ 'warn' if not ai_status.ok else '' }}"></span>{{ ai_status.label }}</div>
+      </div>
+      <p class="subcopy" style="margin-top:8px;">{{ ai_status.detail }}</p>
+
+      <div class="chat-shell" id="miniAiShell">
+        <div id="miniAiOutput" class="chat-output"><div class="chat-bubble assistant">Offline AI ready.</div></div>
+        <div id="miniAiSpinner" class="chat-spinner"><span class="spinner-dot"></span><span class="spinner-dot"></span><span class="spinner-dot"></span><span>Thinking locally…</span></div>
+        <div style="display:flex; gap:12px; align-items:center; margin-top:14px; flex-wrap:wrap;">
+          <label class="muted" for="miniAiModel">AI Mode</label>
+          <select id="miniAiModel" class="select" style="max-width:260px;">
+            <option value="q8" selected>Best Quality (Q8)</option>
+            <option value="q4">Lower Resource (Q4)</option>
+          </select>
+        </div>
+        <textarea id="miniAiPrompt" class="textarea" style="min-height:110px; margin-top:14px;" placeholder="Ask anything..."></textarea>
+        <div style="display:flex; justify-content:flex-end; margin-top:12px;">
+          <button id="miniAiSend" class="btn btn-accent" type="button">Send</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <div>
+        <section class="glass section reveal">
+          <div class="toolbar">
+            <input id="q" class="input" type="text" placeholder="Filter by title, category, or path… (press / to focus)" oninput="quickFilter()" />
+            <select id="sortMode" class="select" onchange="sortRows()">
+              <option value="title_asc">Title A→Z</option>
+              <option value="title_desc">Title Z→A</option>
+              <option value="size_desc">Size ↓</option>
+              <option value="size_asc">Size ↑</option>
+            </select>
+            <button class="btn btn-soft" onclick="clearFilters()">Clear</button>
+          </div>
+
           <div class="chips">
             <button class="chip active" data-cat="all" onclick="setCategory('all', this)">All</button>
             <button class="chip" onclick="setCategory('Wikipedia', this)">Wikipedia</button>
@@ -421,103 +619,130 @@ HTML = """
             <button class="chip" onclick="setCategory('Dictionary', this)">Dictionary</button>
             <button class="chip" onclick="setCategory('Maps', this)">Maps</button>
             <button class="chip" onclick="setCategory('Other', this)">Other</button>
-            <span class="muted" style="margin-left:8px;">Visible: <strong id="visibleCount">0</strong></span>
+            <span class="visible-count">Visible: <strong id="visibleCount">0</strong></span>
           </div>
-          <div class="table">
+
+          <div class="table-wrap">
             <table>
-              <thead><tr><th>Title</th><th>Category</th><th>Size</th><th>Action</th><th>Path</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Category</th>
+                  <th>Size</th>
+                  <th>Action</th>
+                  <th>Path</th>
+                </tr>
+              </thead>
               <tbody>
                 {% for z in zims %}
                 <tr data-search="{{ (z.title + ' ' + z.category + ' ' + z.path).lower() }}" data-category="{{ z.category }}" data-title="{{ z.title.lower() }}" data-size-bytes="{{ z.size_bytes }}">
-                  <td>{{ z.icon }} <strong>{{ z.title }}</strong><div class="muted">{{ z.filename }}</div></td>
+                  <td><div><strong>{{ z.icon }} {{ z.title }}</strong></div><div class="file-name">{{ z.filename }}</div></td>
                   <td><span class="badge">{{ z.category }}</span></td>
-                  <td>{{ z.size }}</td>
+                  <td class="muted">{{ z.size }}</td>
                   <td>
-                    <a class="btn" href="{{ z.open_url }}" target="_blank">Open</a>
-                    <button class="btn" onclick='navigator.clipboard.writeText({{ z.open_url|tojson }})'>Copy Link</button>
+                    <div class="button-row">
+                      <a class="btn btn-accent" style="min-height:36px;padding:8px 12px;font-size:12px;" href="{{ z.open_url }}" target="_blank">Open</a>
+                      <button class="btn btn-soft" style="min-height:36px;padding:8px 12px;font-size:12px;" onclick='navigator.clipboard.writeText({{ z.open_url|tojson }})'>Copy Link</button>
+                    </div>
                   </td>
-                  <td class="muted">{{ z.path }}</td>
+                  <td class="path">{{ z.path }}</td>
                 </tr>
                 {% endfor %}
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
 
-        <div class="card" id="wiki-search">
-          <h3 style="margin:0 0 8px;">Wiki Search</h3>
-          <div class="row"><input id="wikiQ" class="grow" type="text" placeholder="Search active content (e.g., black holes)" /><button class="btn primary" type="button" onclick="wikiSearch()">Search</button></div>
-          <div class="split" style="margin-top:10px;">
-            <div style="border:1px solid var(--border);border-radius:10px;max-height:240px;overflow:auto;padding:6px;" id="wikiResults">
+        <section id="wiki-search" class="glass section reveal">
+          <h2>Wiki Search</h2>
+          <p class="subcopy">Search active offline content and parse useful excerpts fast.</p>
+          <div class="toolbar" style="margin-top:16px; grid-template-columns: 1fr auto;">
+            <input id="wikiQ" class="input" type="text" placeholder="Search active content (e.g. black holes)" />
+            <button class="btn btn-accent" type="button" onclick="wikiSearch()">Search</button>
+          </div>
+          <div class="split">
+            <div id="wikiResults" class="panel-box">
               {% if wiki_results and wiki_results|length > 0 %}
                 {% for r in wiki_results %}
-                  <div style="padding:8px;border-bottom:1px solid #24345d;">
-                    <div><strong>{{ loop.index }}. {{ r.title }}</strong></div>
-                    <div class="muted"><a href="{{ r.url }}" target="_blank">Open full article</a></div>
-                    <button class="btn" style="margin-top:6px;" onclick='wikiParse({{ r.url|tojson }})'>Parse excerpt</button>
+                  <div class="search-item">
+                    <div class="search-title">{{ loop.index }}. {{ r.title }}</div>
+                    <div class="muted small"><a href="{{ r.url }}" target="_blank">Open full article</a></div>
+                    <button class="btn btn-soft" style="margin-top:8px; min-height:36px; padding:8px 12px; font-size:12px;" onclick='wikiParse({{ r.url|tojson }})'>Parse excerpt</button>
                   </div>
                 {% endfor %}
               {% else %}
                 <div class="muted">Run a query to see results.</div>
               {% endif %}
             </div>
-            <div style="border:1px solid var(--border);border-radius:10px;max-height:240px;overflow:auto;padding:10px;white-space:pre-wrap;" id="wikiParsed"></div>
+            <div id="wikiParsed" class="panel-box" style="white-space:pre-wrap;"></div>
           </div>
-        </div>
+        </section>
       </div>
 
-      <div>
-        <div class="card">
-          <details>
-            <summary style="cursor:pointer;font-weight:600;">Advanced System</summary>
-            <p class="muted" style="margin:8px 0 8px;">{{ health_summary }}</p>
-            <div class="row">
-              <button class="btn" onclick="runAdminAction('doctor')">Health Check</button>
-              <button class="btn" onclick="runAdminAction('verify')">Trust Verify</button>
-              <button class="btn" onclick="runAdminAction('backup_usb')">Backup</button>
-              <button class="btn" onclick="runAdminAction('sync_usb')">Import USB</button>
-            </div>
-            <pre id="adminOut" style="margin-top:8px;max-height:180px;overflow:auto;">Ready.</pre>
-          </details>
-        </div>
+      <aside class="side-stack">
+        <section class="glass section reveal">
+          <h2>Quick Actions</h2>
+          <div class="quick-grid" style="margin-top:16px;">
+            <a class="btn btn-soft" href="/go/water" target="_blank">💧 Water Purification</a>
+            <a class="btn btn-soft" href="/go/firstaid" target="_blank">🩹 First Aid</a>
+            <a class="btn btn-soft" href="/go/shelter" target="_blank">🏕️ Shelter</a>
+            <a class="btn btn-soft" href="/?qa=translate#translator">🈺 Emergency Phrase</a>
+          </div>
+          <p id="quickActionStatus" class="subcopy">{{ qa_status or 'Fast access to the most useful field topics.' }}</p>
+        </section>
 
-        <div class="card" id="translator">
-          <h3 style="margin:0 0 8px;">Translator (Offline)</h3>
-          <p class="muted" style="margin:0 0 10px;">One clean flow for both conversation and normal text translation.</p>
-          <form id="translateForm" method="post" action="/translate_form">
-            <div class="row">
-              <select id="trSource" name="source">
+        <section id="translator" class="glass section reveal">
+          <h2>Translator</h2>
+          <p class="subcopy">Clean offline translation for emergency and everyday use.</p>
+          <form id="translateForm" method="post" action="/translate_form" style="margin-top:16px;">
+            <div class="translator-row">
+              <select id="trSource" name="source" class="select">
                 {% for c in language_options %}
                   <option value="{{ c.code }}" {% if c.code == tr_source %}selected{% endif %}>{{ c.label }}</option>
                 {% endfor %}
               </select>
-              <button class="btn" type="button" onclick="swapTranslatorLangs()">⇄</button>
-              <select id="trTarget" name="target">
+              <button class="btn btn-soft" type="button" onclick="swapTranslatorLangs()">⇄</button>
+              <select id="trTarget" name="target" class="select">
                 {% for c in language_options %}
                   <option value="{{ c.code }}" {% if c.code == tr_target %}selected{% endif %}>{{ c.label }}</option>
                 {% endfor %}
               </select>
             </div>
-            <textarea id="trInput" name="text" style="margin-top:10px;" placeholder="Type what one person says (or paste any text)...">{{ tr_input }}</textarea>
-            <div class="row" style="margin-top:6px;">
-              <button class="btn primary" type="submit" formaction="/translate_form">Translate</button>
-              <button class="btn" type="button" onclick="document.getElementById('trInput').value = document.getElementById('trOutput').value || ''">Use Output as Next Input</button>
+            <textarea id="trInput" name="text" class="textarea" style="margin-top:12px;" placeholder="Type what one person says, or paste any text...">{{ tr_input }}</textarea>
+            <div class="button-row" style="margin-top:12px;">
+              <button class="btn btn-accent" type="submit" formaction="/translate_form">Translate</button>
+              <button class="btn btn-soft" type="button" onclick="document.getElementById('trInput').value = document.getElementById('trOutput').value || ''">Use Output as Next Input</button>
             </div>
           </form>
-          <textarea id="trOutput" style="margin-top:8px;" placeholder="Translation output..." readonly>{{ tr_output }}</textarea>
-          <p id="trMeta" class="muted" style="margin:8px 0 0;">{{ tr_meta }}</p>
-        </div>
+          <textarea id="trOutput" class="textarea" style="margin-top:12px;" placeholder="Translation output..." readonly>{{ tr_output }}</textarea>
+          <p id="trMeta" class="subcopy">{{ tr_meta }}</p>
+        </section>
 
-        <div class="card">
-          <h3 style="margin:0 0 8px;">CLI Quick Query</h3>
-          <p class="muted">In terminal, run these exact commands:</p>
-          <pre>source ~/wiki/.venv/bin/activate
+
+        <section class="glass section reveal">
+          <details>
+            <summary>Advanced System</summary>
+            <p class="subcopy" style="margin-top:12px;">{{ health_summary }}</p>
+            <div class="button-row" style="margin-top:14px;">
+              <button class="btn btn-soft" onclick="runAdminAction('doctor')">Health Check</button>
+              <button class="btn btn-soft" onclick="runAdminAction('verify')">Trust Verify</button>
+              <button class="btn btn-soft" onclick="runAdminAction('backup_usb')">Backup</button>
+              <button class="btn btn-soft" onclick="runAdminAction('sync_usb')">Import USB</button>
+            </div>
+            <pre id="adminOut" class="pre">Ready.</pre>
+          </details>
+        </section>
+
+        <section class="glass section reveal">
+          <h2>CLI Quick Query</h2>
+          <p class="subcopy">Exact terminal commands:</p>
+          <pre class="pre">source ~/wiki/.venv/bin/activate
 wiki-ask "black holes"
 wiki-ask "water purification" --top 5 --open 1 --chars 2500</pre>
-        </div>
-      </div>
-    </div>
-  </div>
+        </section>
+      </aside>
+    </section>
+  </main>
 </body>
 </html>
 """
@@ -527,13 +752,13 @@ HELP_HTML = """
 <h1>Offgrid Intel Kit – Help</h1>
 <p>This system is designed to run without internet once installed.</p>
 <h2>URLs</h2>
-<ul><li>Dashboard: <code>:8090</code></li><li>Kiwix reader: <code>:8080</code></li><li>Offline maps: <code>:8091</code></li></ul>
+<ul><li>Dashboard: <code>:8090</code></li><li>Kiwix reader: <code>:8080</code></li><li>Offline maps: <code>:8091</code></li><li>Offline AI (llama.cpp): <code>:8092</code></li></ul>
 <h2>Translator</h2>
 <ul><li>Built for offline use with local translation engine(s)</li><li>If language packs are missing, install Argos Translate + package files and restart <code>zim-ui.service</code></li></ul>
 <h2>USB Distribution</h2>
 <ul><li>Run <code>START_LINUX.sh</code> (Linux), <code>START_WINDOWS.bat</code> (Windows), or <code>START_MAC.command</code> (macOS)</li><li>Use <code>scripts/verify_checksums.sh</code> before install</li></ul>
 <h2>Troubleshooting</h2>
-<ul><li>Check service status: <code>wiki-status</code>, <code>zim-ui-status</code>, <code>map-ui-status</code></li><li>Port check: <code>ss -ltnp | grep -E ':8080|:8090|:8091'</code></li></ul>
+<ul><li>Check service status: <code>wiki-status</code>, <code>zim-ui-status</code>, <code>map-ui-status</code>, <code>llama-status</code></li><li>Port check: <code>ss -ltnp | grep -E ':8080|:8090|:8091|:8092'</code></li></ul>
 </body></html>
 """
 
@@ -647,6 +872,13 @@ async function play(){
 </div>
 </body></html>
 """
+
+AI_BASE = os.environ.get("AI_BASE", f"http://127.0.0.1:{os.environ.get('LLAMA_PORT', '8092')}")
+AI_MODEL_Q8 = os.environ.get("LLAMA_MODEL_Q8", str(KIT_ROOT / "models/local-qwen/Huihui-Qwen3.5-4B-abliterated.Q8_0.gguf"))
+AI_MODEL_Q4 = os.environ.get("LLAMA_MODEL_Q4", str(KIT_ROOT / "models/local-qwen/Huihui-Qwen3.5-4B-abliterated.Q4_K_M.gguf"))
+AI_MODEL = os.environ.get("LLAMA_MODEL", AI_MODEL_Q8)
+AI_MODEL_NAME = os.environ.get("AI_MODEL_NAME", "local-model")
+AI_TIMEOUT = float(os.environ.get("AI_TIMEOUT", "600"))
 
 LANGUAGE_LABELS = {
     "auto": "Auto Detect",
@@ -1055,14 +1287,109 @@ def _is_under_roots(path: Path, roots):
     return False
 
 
+def resolve_ai_model(choice: str | None = None) -> str:
+    choice = (choice or '').strip().lower()
+    if choice == 'q4':
+        return AI_MODEL_Q4
+    return AI_MODEL_Q8
+
+
+def _llama_model_id() -> str:
+    try:
+        r = requests.get(f"{AI_BASE}/v1/models", timeout=5)
+        if r.ok:
+            data = r.json() or {}
+            models = data.get("data") or []
+            if models and isinstance(models, list):
+                mid = models[0].get("id")
+                if mid:
+                    return str(mid)
+    except Exception:
+        pass
+    return AI_MODEL_NAME
+
+
+def ai_status_info():
+    try:
+        r = requests.get(f"{AI_BASE}/v1/models", timeout=5)
+        if r.ok:
+            data = r.json()
+            models = data.get("data") or []
+            names = [m.get("id") for m in models if m.get("id")]
+            selected = Path(AI_MODEL).name
+            return {
+                "ok": True,
+                "label": f"AI online (llama.cpp)",
+                "detail": f"server model(s): {', '.join(names[:3]) if names else 'reachable'} • selected file: {selected}",
+                "models": names,
+            }
+    except Exception:
+        pass
+    return {
+        "ok": False,
+        "label": "AI offline",
+        "detail": "Start local llama-server service to enable offline AI.",
+        "models": [],
+    }
+
+
+def clean_ai_output(text: str) -> str:
+    if not text:
+        return ""
+    text = re.sub(r"<think>[\s\S]*?</think>", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"<\|[^>]+\|>", "", text)
+    text = re.sub(r"<\/?think>", "", text, flags=re.IGNORECASE)
+    text = text.replace("’", "'")
+    lines = [ln.rstrip() for ln in text.splitlines()]
+    cleaned = []
+    for ln in lines:
+        if not cleaned or ln != cleaned[-1]:
+            cleaned.append(ln)
+    text = "\n".join(cleaned)
+    text = re.sub(r"\n{3,}", "\n\n", text).strip()
+    return text.strip()
+
+
+def ai_chat(prompt: str, mode: str = "general", context: str = "", model_choice: str | None = None):
+    system_map = {
+        "general": "You are an offline local AI assistant inside an offgrid knowledge console. Be useful, clear, calm, and direct. Support general prompts and optionally help interpret pasted wiki excerpts. Avoid dangerous, illegal, deceptive, or harmful instructions.",
+        "survival": "You are an offline local AI assistant inside an offgrid knowledge console. Be useful, clear, calm, and direct. Support general prompts and optionally help interpret pasted wiki excerpts. Avoid dangerous, illegal, deceptive, or harmful instructions.",
+        "summarize": "You are an offline local AI assistant inside an offgrid knowledge console. Summarize clearly and compactly while preserving important facts and practical details.",
+        "explain": "You are an offline local AI assistant inside an offgrid knowledge console. Explain clearly in simple language with useful structure and examples when appropriate.",
+    }
+    system = system_map.get(mode, system_map["general"])
+    user_prompt = prompt.strip()
+    if context.strip():
+        user_prompt = f"Context:\n{context.strip()}\n\nUser request:\n{user_prompt}"
+
+    model_name = _llama_model_id()
+    payload = {
+        "model": model_name,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user_prompt},
+        ],
+        "stream": False,
+        "temperature": 0.2,
+    }
+    r = requests.post(f"{AI_BASE}/v1/chat/completions", json=payload, timeout=AI_TIMEOUT)
+    r.raise_for_status()
+    data = r.json()
+    choices = data.get("choices") or []
+    msg = (choices[0] or {}).get("message") if choices else {}
+    return clean_ai_output((msg or {}).get("content", "").strip())
+
+
 def health_summary_text():
     statuses = []
-    for svc in ["kiwix.service", "zim-selector.service", "offline-map-ui.service"]:
+    for svc in ["kiwix.service", "zim-selector.service", "offline-map-ui.service", "llama-server.service"]:
         try:
             subprocess.check_call(["systemctl", "is-active", "--quiet", svc])
             statuses.append(f"{svc.split('.')[0]}:ok")
         except Exception:
             statuses.append(f"{svc.split('.')[0]}:check")
+    ai = ai_status_info()
+    statuses.append("ai:ok" if ai.get("ok") else "ai:offline")
     if (RUNTIME_ROOT / "ebooks").exists():
         statuses.append("ebooks:ok")
     else:
@@ -1147,6 +1474,10 @@ def build_page(extra_scan_dir: str, do_resync: bool, tr_input: str = "", tr_sour
     status, warning = translator_status_text()
     health_summary = health_summary_text()
     language_options = language_options_for_installed()
+    ai_status = ai_status_info()
+    ai_prompt = request.args.get("ai_prompt", "")
+    ai_context = request.args.get("ai_context", "")
+    ai_output = request.args.get("ai_output", "")
 
     return render_template_string(
         HTML,
@@ -1170,9 +1501,82 @@ def build_page(extra_scan_dir: str, do_resync: bool, tr_input: str = "", tr_sour
         tr_meta=tr_meta,
         wiki_results=wiki_results or [],
         qa_status=qa_status,
+        ai_status=ai_status,
+        ai_model=AI_MODEL,
+        ai_prompt=ai_prompt,
+        ai_context=ai_context,
+        ai_output=ai_output,
     )
 
 
+
+
+AI_PAGE_HTML = """<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Offline AI</title>
+  <style>
+    body { margin:0; font-family: Inter, system-ui, sans-serif; background:#0b1220; color:#eef4ff; }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 24px; }
+    .panel { background: rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:24px; padding:22px; box-shadow: 0 18px 50px rgba(0,0,0,.22); }
+    .topbar { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
+    .chat { min-height: 360px; max-height: 58vh; overflow:auto; display:flex; flex-direction:column; gap:12px; padding: 4px; border-radius:18px; background: rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); }
+    .bubble { padding:14px 16px; border-radius:18px; white-space:pre-wrap; line-height:1.7; max-width: 88%; }
+    .assistant { background: rgba(255,255,255,.06); align-self:flex-start; }
+    .user { background: rgba(125,211,252,.14); align-self:flex-end; }
+    textarea { width:100%; box-sizing:border-box; border-radius:16px; border:1px solid rgba(255,255,255,.12); background:#101a2d; color:#eef4ff; padding:14px; }
+    .prompt { min-height: 110px; }
+    .context { min-height: 100px; margin-top: 12px; }
+    .row { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; justify-content:flex-end; }
+    button, a.btn { border:1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color:#eef4ff; border-radius:14px; padding:12px 16px; cursor:pointer; text-decoration:none; }
+    button.primary { background: rgba(125,211,252,.15); }
+    .muted { color:#9fb0cb; font-size:14px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <div class="topbar">
+        <div><h1 style="margin:0 0 8px 0;">Offline AI</h1><div class="muted">Simple local chat interface powered by {{ ai_status.detail or ai_model }}.</div></div>
+        <div class="row" style="margin-top:0; justify-content:flex-start;"><a class="btn" href="/">Back to dashboard</a></div>
+      </div>
+      <div class="chat" id="chat">
+        {% if prompt %}<div class="bubble user">{{ prompt }}</div>{% endif %}
+        <div class="bubble assistant">{{ output or "Offline AI ready. Ask anything below." }}</div>
+      </div>
+      <form method="post" action="/ai">
+        <textarea class="prompt" name="prompt" placeholder="Ask anything...">{{ prompt }}</textarea>
+        <details style="margin-top:12px;"><summary class="muted">Optional context</summary><textarea class="context" name="context" placeholder="Paste optional supporting text here...">{{ context }}</textarea></details>
+        <div class="row">
+          <button class="primary" type="submit">Send</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
+"""
+
+
+@app.route("/ai", methods=["GET", "POST"])
+def ai_page():
+    ai_status = ai_status_info()
+    prompt = ""
+    context = ""
+    output = ""
+    if request.method == "POST":
+        prompt = (request.form.get("prompt") or "").strip()
+        context = (request.form.get("context") or "").strip()
+        if prompt:
+            try:
+                output = ai_chat(prompt, mode="general", context=context) or "No output returned."
+            except Exception as e:
+                output = f"Offline AI unavailable: {e}"
+        else:
+            output = "Enter a prompt first."
+    return render_template_string(AI_PAGE_HTML, ai_status=ai_status, ai_model=AI_MODEL, prompt=prompt, context=context, output=output)
 @app.get("/")
 def index():
     scan_dir = request.args.get("scan_dir", "")
@@ -1225,6 +1629,11 @@ def go_knowledge():
 @app.get("/go/maps")
 def go_maps():
     return redirect(f"http://{host_ip()}:8091")
+
+
+@app.get("/go/ai")
+def go_ai():
+    return redirect(f"http://{host_ip()}:8092")
 
 
 @app.get("/go/translate")
@@ -1359,6 +1768,63 @@ def translate_form():
     })
     from flask import redirect
     return redirect(f"/?{qs}#translator")
+
+
+@app.get("/api/ai/status")
+def api_ai_status():
+    return jsonify(ai_status_info())
+
+
+@app.post("/ai_form")
+def ai_form():
+    prompt = (request.form.get("prompt") or "").strip()
+    context = (request.form.get("context") or "").strip()
+    output = "Enter a prompt first."
+    if prompt:
+        try:
+            output = ai_chat(prompt, mode="general", context=context) or "No output returned."
+        except Exception as e:
+            output = f"Offline AI unavailable: {e}"
+    params = {
+        "ai_prompt": prompt,
+        "ai_context": context,
+        "ai_output": output,
+    }
+    from urllib.parse import urlencode
+    return redirect('/?' + urlencode(params))
+
+
+@app.post("/api/ai/stream")
+def api_ai_stream():
+    payload = request.get_json(silent=True) or {}
+    prompt = (payload.get("prompt") or "").strip()
+    context = (payload.get("context") or "").strip()
+    model_choice = (payload.get("model_choice") or "q8").strip().lower()
+    if not prompt:
+        return ("Prompt is required.", 400)
+    def generate():
+        try:
+            output = ai_chat(prompt, mode="general", context=context, model_choice=model_choice)
+            yield output or "No output returned."
+        except Exception as e:
+            yield f"\n[stream error: {e}]"
+    return Response(generate(), mimetype="text/plain")
+
+
+@app.post("/api/ai/chat")
+def api_ai_chat():
+    payload = request.get_json(silent=True) or {}
+    prompt = (payload.get("prompt") or "").strip()
+    context = (payload.get("context") or "").strip()
+    mode = (payload.get("mode") or "general").strip().lower()
+    model_choice = (payload.get("model_choice") or "q8").strip().lower()
+    if not prompt:
+        return jsonify({"error": "Prompt is required."}), 400
+    try:
+        output = ai_chat(prompt, mode=mode, context=context, model_choice=model_choice)
+        return jsonify({"ok": True, "output": output, "model": resolve_ai_model(model_choice)})
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"Offline AI unavailable: {e}"}), 503
 
 
 @app.post("/api/translate")

@@ -1,6 +1,7 @@
 # Offgrid Intel Kit (Clean Structure)
 
 Offline-first knowledge + maps bundle with Kiwix dashboard and local translation.
+Offline AI is powered by local `llama.cpp` (`llama-server`).
 
 ## Layout
 
@@ -47,6 +48,7 @@ Then open:
 - Dashboard: `http://<HOST_IP>:8090`
 - Kiwix: `http://<HOST_IP>:8080`
 - Offline map: `http://<HOST_IP>:8091`
+- Offline AI (llama.cpp): `http://<HOST_IP>:8092`
 
 ## Important Safety & License Notice
 
