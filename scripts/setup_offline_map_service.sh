@@ -14,6 +14,33 @@ fi
 # shellcheck source=/dev/null
 source "${SCRIPT_DIR}/layout.sh"
 
+sudo mkdir -p "${WIKI_MAPS_DIR}/static" "${WIKI_MAPS_DIR}/data"
+sudo chown -R "${RUN_USER}:${RUN_USER}" "${WIKI_MAPS_DIR}"
+
+# One-time migration from legacy root runtime if needed.
+if [[ "${RUN_USER}" != "root" ]]; then
+  if sudo test -d /root/wiki/maps; then
+    if [[ -z "$(find "${WIKI_MAPS_DIR}/static" -maxdepth 1 -type f 2>/dev/null | head -n1 || true)" ]]; then
+      sudo rsync -a /root/wiki/maps/static/ "${WIKI_MAPS_DIR}/static/" 2>/dev/null || true
+    fi
+    if [[ -z "$(find "${WIKI_MAPS_DIR}/data" -maxdepth 1 -type f 2>/dev/null | head -n1 || true)" ]]; then
+      sudo rsync -a /root/wiki/maps/data/ "${WIKI_MAPS_DIR}/data/" 2>/dev/null || true
+    fi
+    sudo chown -R "${RUN_USER}:${RUN_USER}" "${WIKI_MAPS_DIR}" || true
+  fi
+fi
+
+# Self-heal map prerequisites (best effort).
+if [[ ! -f "${WIKI_MAPS_DIR}/static/maplibre-gl.js" || ! -f "${WIKI_MAPS_DIR}/static/maplibre-gl.css" || ! -f "${WIKI_MAPS_DIR}/static/pmtiles.js" ]]; then
+  "${SCRIPT_DIR}/setup_offline_map_assets.sh" || true
+fi
+if [[ ! -f "${WIKI_MAPS_DIR}/data/us_places.tsv" ]]; then
+  "${SCRIPT_DIR}/setup_offline_place_index.sh" || true
+fi
+if [[ -z "$(find "${WIKI_MAPS_DIR}/data" -maxdepth 1 -type f -name '*.pmtiles' 2>/dev/null | head -n1 || true)" ]]; then
+  "${SCRIPT_DIR}/download_osm_pmtiles.sh" "-74.30,40.45,-73.65,40.95" "14" "${WIKI_MAPS_DIR}/data/nyc.pmtiles" || true
+fi
+
 write_layout_env_file "${WIKI_RUNTIME_ROOT}/layout.env"
 sudo install -m 0644 "${WIKI_RUNTIME_ROOT}/layout.env" /etc/default/wiki-offline-kit
 

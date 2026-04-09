@@ -37,6 +37,10 @@ DEFAULT_CONFIG = {
     "maxZoom": 15
 }
 
+DATASET_VIEW_HINTS = {
+    "nyc.pmtiles": {"center": [-74.0, 40.72], "zoom": 9},
+}
+
 PLACES = []
 
 INDEX_HTML = """<!doctype html>
@@ -308,6 +312,16 @@ def load_config():
     preferred = "usa.pmtiles" if "usa.pmtiles" in datasets else (datasets[0] if datasets else data.get("pmtiles", DEFAULT_CONFIG["pmtiles"]))
     if not data.get("pmtiles") or data.get("pmtiles") not in datasets:
         data["pmtiles"] = preferred
+
+    # Helpful first-view defaults for starter extracts.
+    hint = DATASET_VIEW_HINTS.get(str(data.get("pmtiles", "")).lower())
+    if hint:
+        center = data.get("center")
+        zoom = data.get("zoom")
+        if center == DEFAULT_CONFIG["center"] or center is None:
+            data["center"] = hint["center"]
+        if zoom == DEFAULT_CONFIG["zoom"] or zoom is None:
+            data["zoom"] = hint["zoom"]
     # Keep older configs compatible but allow deeper zoom for trail-level detail.
     try:
         data["maxZoom"] = max(15, int(data.get("maxZoom", 15)))
@@ -347,10 +361,16 @@ def set_dataset():
     pm = (payload.get("pmtiles") or "").strip()
     if not pm or "/" in pm or ".." in pm or not pm.endswith('.pmtiles'):
         return jsonify({"ok": False, "error": "invalid dataset"}), 400
-    if not (DATA_DIR / pm).exists():
+    exists = (DATA_DIR / pm).exists() or any((d / pm).exists() for d in FALLBACK_DATA_DIRS if d.exists())
+    if not exists:
         return jsonify({"ok": False, "error": "dataset not found"}), 404
     cfg = load_config()
     cfg["pmtiles"] = pm
+    hint = DATASET_VIEW_HINTS.get(pm.lower())
+    if hint and (cfg.get("center") == DEFAULT_CONFIG["center"] or cfg.get("center") is None):
+        cfg["center"] = hint["center"]
+    if hint and (cfg.get("zoom") == DEFAULT_CONFIG["zoom"] or cfg.get("zoom") is None):
+        cfg["zoom"] = hint["zoom"]
     CONFIG_FILE.write_text(json.dumps(cfg, indent=2) + "\n")
     return jsonify({"ok": True, "pmtiles": pm})
 

@@ -10,6 +10,14 @@ chmod +x ./*.sh ./scripts/*.sh ./scripts/*.py || true
 ./scripts/install_pi_wiki.sh
 if compgen -G "$KIT_DST/zims/*.zim" > /dev/null; then
   ./scripts/run_all_auto_zims.sh "$KIT_DST/zims"
+else
+  echo "No bundled ZIMs found. Setting up core services anyway..."
+  ./scripts/setup_zim_ui_service.sh
+  ./scripts/setup_sudoers_for_zim_ui.sh
+  ./scripts/setup_offline_map_service.sh
+  ./scripts/setup_translator.sh || true
+  ./scripts/setup_llama_cpp.sh
+  ./scripts/setup_llama_service.sh || true
 fi
 echo "Done. Open:"
 echo "  http://<HOST_IP>:8090  dashboard"
