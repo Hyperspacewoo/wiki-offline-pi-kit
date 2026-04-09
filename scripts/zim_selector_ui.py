@@ -279,43 +279,45 @@ HTML = """
 </script>
   <style>
     :root {
-      --bg: #0f0f0f;
-      --surface: #1a1a1a;
-      --surface-2: #202020;
-      --line: #303030;
-      --text: #f5f5f5;
-      --muted: #b8b8b8;
-      --primary: #00d4aa;
-      --accent: #00a3cc;
+      --bg: #f4f6fb;
+      --surface: rgba(255, 255, 255, 0.78);
+      --surface-2: #ffffff;
+      --line: #dbe2ef;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #0a84ff;
+      --accent: #5ac8fa;
       --warning: #f59e0b;
-      --ok: #22c55e;
+      --ok: #34c759;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       color: var(--text);
-      font-family: "IBM Plex Sans", "Noto Sans", "Liberation Sans", sans-serif;
-      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(180deg, #f7f9fd 0%, #edf2fa 100%);
     }
     a { color: inherit; text-decoration: none; }
     button, input, select, textarea { font: inherit; }
     h1, h2, h3, p { margin: 0; }
 
     .shell {
-      max-width: 1280px;
+      max-width: 1320px;
       margin: 0 auto;
-      padding: 20px;
+      padding: 22px;
     }
     .glass {
       background: var(--surface);
       border: 1px solid var(--line);
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      border-radius: 14px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 10px 30px rgba(30, 41, 59, 0.08);
     }
-    .section { padding: 20px; margin-bottom: 12px; }
+    .section { padding: 18px; margin-bottom: 12px; }
     .hero-top { display: block; }
     .eyebrow { display: none; }
-    .hero-title { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
+    .hero-title { font-size: 30px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
     .hero-copy { color: var(--muted); margin-bottom: 14px; line-height: 1.5; }
     .hero-actions, .action-row, .quick-grid, .button-row { display: flex; gap: 8px; flex-wrap: wrap; }
     .status-card, .status-head { display: block; }
@@ -325,17 +327,17 @@ HTML = """
       align-items: center;
       gap: 6px;
       padding: 6px 10px;
-      border-radius: 8px;
+      border-radius: 999px;
       border: 1px solid var(--line);
       font-size: 12px;
       color: var(--muted);
-      background: var(--surface-2);
+      background: #f8fbff;
     }
     .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
     .dot.warn { background: var(--warning); }
 
     .stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
-    .stat-card { padding: 14px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); }
+    .stat-card { padding: 14px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
     .stat-label { color: var(--muted); font-size: 12px; }
     .stat-value { font-size: 24px; font-weight: 600; margin-top: 6px; }
 
@@ -346,66 +348,68 @@ HTML = """
       gap: 6px;
       min-height: 40px;
       padding: 9px 12px;
-      border-radius: 8px;
+      border-radius: 10px;
       border: 1px solid var(--line);
-      background: var(--surface-2);
+      background: #ffffff;
       color: var(--text);
       cursor: pointer;
-      transition: background-color .15s ease, border-color .15s ease;
+      transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
     }
-    .btn:hover { background: #262626; }
-    .btn-accent { background: #1f3c36; border-color: #2d6f60; }
-    .btn-mint { background: #1b3431; border-color: #2a4f49; }
-    .btn-soft { background: var(--surface-2); }
+    .btn:hover { background: #f6f9ff; border-color: #cfd8e8; }
+    .btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(10,132,255,0.18); }
+    .btn-accent { background: #0a84ff; border-color: #0a84ff; color: #ffffff; }
+    .btn-accent:hover { background: #0078f0; border-color: #0078f0; }
+    .btn-mint { background: #e8f7ff; border-color: #c5e8ff; color: #0b5c8e; }
+    .btn-soft { background: #ffffff; }
 
     .input, .select, .textarea {
       width: 100%;
-      border-radius: 8px;
+      border-radius: 10px;
       border: 1px solid var(--line);
-      background: #141414;
+      background: #ffffff;
       color: var(--text);
       padding: 10px 12px;
       outline: none;
     }
-    .input::placeholder, .textarea::placeholder { color: #8f8f8f; }
-    .input:focus, .select:focus, .textarea:focus { border-color: #4b4b4b; }
+    .input::placeholder, .textarea::placeholder { color: #9aa3b2; }
+    .input:focus, .select:focus, .textarea:focus { border-color: #7bb8ff; box-shadow: 0 0 0 3px rgba(10,132,255,0.14); }
     .textarea { min-height: 110px; resize: vertical; }
 
     .toolbar { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; }
     .chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
     .chip {
       padding: 7px 10px;
-      border-radius: 8px;
+      border-radius: 999px;
       border: 1px solid var(--line);
-      background: #161616;
+      background: #ffffff;
       color: var(--muted);
       cursor: pointer;
     }
-    .chip.active, .chip:hover { background: #242424; color: var(--text); }
+    .chip.active, .chip:hover { background: #eef5ff; color: #2458a6; border-color: #c7ddff; }
     .visible-count { font-size: 12px; color: var(--muted); }
 
     .layout { display: grid; grid-template-columns: 1.7fr 1fr; gap: 12px; }
-    .table-wrap { margin-top: 12px; overflow: auto; border-radius: 10px; border: 1px solid var(--line); background: #141414; max-height: 58vh; }
+    .table-wrap { margin-top: 12px; overflow: auto; border-radius: 12px; border: 1px solid var(--line); background: #ffffff; max-height: 58vh; }
     table { width: 100%; min-width: 900px; border-collapse: collapse; }
-    th, td { padding: 12px; border-top: 1px solid #292929; text-align: left; vertical-align: top; }
+    th, td { padding: 12px; border-top: 1px solid #edf1f7; text-align: left; vertical-align: top; }
     th {
       position: sticky;
       top: 0;
       z-index: 1;
-      background: #1f1f1f;
+      background: #f8fbff;
       border-top: none;
       color: var(--muted);
       font-size: 12px;
       font-weight: 600;
     }
-    tbody tr:hover { background: #1d1d1d; }
+    tbody tr:hover { background: #f8fbff; }
     .file-name { font-size: 12px; color: var(--muted); margin-top: 4px; }
     .badge {
       display: inline-block;
       padding: 4px 8px;
-      border-radius: 6px;
+      border-radius: 8px;
       border: 1px solid var(--line);
-      background: #1f1f1f;
+      background: #f8fbff;
       font-size: 12px;
       color: var(--muted);
     }
@@ -416,14 +420,14 @@ HTML = """
     .subcopy { margin-top: 8px; color: var(--muted); font-size: 13px; }
     .split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
     .panel-box {
-      border-radius: 10px;
+      border-radius: 12px;
       border: 1px solid var(--line);
-      background: #141414;
+      background: #ffffff;
       padding: 12px;
       max-height: 300px;
       overflow: auto;
     }
-    .search-item { padding: 10px 0; border-bottom: 1px solid #292929; }
+    .search-item { padding: 10px 0; border-bottom: 1px solid #edf1f7; }
     .search-item:last-child { border-bottom: none; }
     .search-title { font-weight: 600; }
     .small { font-size: 12px; }
@@ -433,9 +437,9 @@ HTML = """
     .pre {
       margin-top: 12px;
       padding: 12px;
-      border-radius: 8px;
+      border-radius: 10px;
       border: 1px solid var(--line);
-      background: #141414;
+      background: #ffffff;
       color: var(--text);
       white-space: pre-wrap;
       overflow: auto;
@@ -444,11 +448,11 @@ HTML = """
       line-height: 1.45;
     }
 
-    .chat-shell { border-radius: 10px; border: 1px solid var(--line); background: #141414; padding: 12px; margin-top: 12px; }
+    .chat-shell { border-radius: 12px; border: 1px solid var(--line); background: #ffffff; padding: 12px; margin-top: 12px; }
     .chat-output { min-height: 220px; max-height: 48vh; overflow: auto; display:flex; flex-direction:column; gap:10px; }
-    .chat-bubble { max-width: 92%; border-radius: 10px; padding: 10px 12px; white-space: pre-wrap; line-height: 1.6; }
-    .chat-bubble.user { align-self: flex-end; background: #1f3330; border: 1px solid #2d6f60; color: var(--text); }
-    .chat-bubble.assistant { align-self: flex-start; background: #1d1d1d; border: 1px solid var(--line); color: var(--text); }
+    .chat-bubble { max-width: 92%; border-radius: 12px; padding: 10px 12px; white-space: pre-wrap; line-height: 1.6; }
+    .chat-bubble.user { align-self: flex-end; background: #0a84ff; border: 1px solid #0a84ff; color: #ffffff; }
+    .chat-bubble.assistant { align-self: flex-start; background: #f7f9fc; border: 1px solid #dde6f2; color: var(--text); }
     .chat-spinner { display:none; align-items:center; gap:8px; color: var(--muted); font-size: 13px; margin-top: 8px; }
     .spinner-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1s infinite ease-in-out; }
     .spinner-dot:nth-child(2) { animation-delay: .15s; }
@@ -476,7 +480,7 @@ HTML = """
     <section class="glass section reveal">
       <div class="hero-top">
         <h1 class="hero-title">Offgrid Intel Kit</h1>
-        <p class="hero-copy">Offline wiki, maps, translator, and local AI.</p>
+        <p class="hero-copy">Clean offline workspace for knowledge, maps, translation, and local AI.</p>
         <div class="hero-actions">
           <a class="btn btn-accent" href="http://{{ host_ip }}:8080" target="_blank">Open Knowledge</a>
           <a class="btn btn-mint" href="http://{{ host_ip }}:8091">Open Maps</a>
@@ -496,12 +500,12 @@ HTML = """
 
     <section class="glass section reveal">
       <div class="action-row">
-        <a class="btn btn-accent" href="http://{{ host_ip }}:8080" target="_blank">📘 Knowledge</a>
-        <a class="btn btn-mint" href="http://{{ host_ip }}:8091">🗺️ Maps</a>
-        <a class="btn btn-soft" href="http://{{ host_ip }}:8092" target="_blank">🤖 AI</a>
-        <a class="btn btn-soft" href="#translator">🈯 Translate</a>
-        <a class="btn btn-soft" href="/ebooks">📚 Library</a>
-        <a class="btn btn-soft" href="/morse">📡 Morse</a>
+        <a class="btn btn-accent" href="http://{{ host_ip }}:8080" target="_blank">Knowledge</a>
+        <a class="btn btn-mint" href="http://{{ host_ip }}:8091">Maps</a>
+        <a class="btn btn-soft" href="http://{{ host_ip }}:8092" target="_blank">AI</a>
+        <a class="btn btn-soft" href="#translator">Translate</a>
+        <a class="btn btn-soft" href="/ebooks">Library</a>
+        <a class="btn btn-soft" href="/morse">Morse</a>
         <a class="btn btn-soft" href="/help">Support</a>
       </div>
       <div class="toolbar" style="margin-top:16px; grid-template-columns: 1fr auto;">
@@ -627,10 +631,10 @@ HTML = """
         <section class="glass section reveal">
           <h2>Quick Actions</h2>
           <div class="quick-grid" style="margin-top:16px;">
-            <a class="btn btn-soft" href="/go/water" target="_blank">💧 Water Purification</a>
-            <a class="btn btn-soft" href="/go/firstaid" target="_blank">🩹 First Aid</a>
-            <a class="btn btn-soft" href="/go/shelter" target="_blank">🏕️ Shelter</a>
-            <a class="btn btn-soft" href="/?qa=translate#translator">🈺 Emergency Phrase</a>
+            <a class="btn btn-soft" href="/go/water" target="_blank">Water Purification</a>
+            <a class="btn btn-soft" href="/go/firstaid" target="_blank">First Aid</a>
+            <a class="btn btn-soft" href="/go/shelter" target="_blank">Shelter</a>
+            <a class="btn btn-soft" href="/?qa=translate#translator">Emergency Phrase</a>
           </div>
           <p id="quickActionStatus" class="subcopy">{{ qa_status or 'Fast access to the most useful field topics.' }}</p>
         </section>

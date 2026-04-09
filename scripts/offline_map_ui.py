@@ -4,7 +4,7 @@ from pathlib import Path
 import json
 import os
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder=None)
 
 RUNTIME_ROOT = Path(os.environ.get("WIKI_RUNTIME_ROOT", Path.home() / "wiki"))
 MAP_ROOT = Path(os.environ.get("WIKI_MAPS_DIR", RUNTIME_ROOT / "maps"))
@@ -12,6 +12,21 @@ DATA_DIR = MAP_ROOT / "data"
 STATIC_DIR = MAP_ROOT / "static"
 CONFIG_FILE = MAP_ROOT / "config.json"
 PLACES_FILE = DATA_DIR / "us_places.tsv"
+FALLBACK_PLACES_FILES = [
+    Path("/home/void/.local/share/Trash/files/wiki/maps/data/us_places.tsv"),
+    Path("/home/void/wiki/maps/data/us_places.tsv"),
+    Path(__file__).resolve().parent.parent / "maps/data/us_places.tsv",
+]
+FALLBACK_STATIC_DIRS = [
+    Path("/home/void/.local/share/Trash/files/wiki/maps/static"),
+    Path("/home/void/wiki/maps/static"),
+    Path(__file__).resolve().parent.parent / "maps/static",
+]
+FALLBACK_DATA_DIRS = [
+    Path("/home/void/.local/share/Trash/files/wiki/maps/data"),
+    Path("/home/void/wiki/maps/data"),
+    Path(__file__).resolve().parent.parent / "maps/data",
+]
 
 DEFAULT_CONFIG = {
     "title": "Offgrid Intel Kit Map",
@@ -33,20 +48,55 @@ INDEX_HTML = """<!doctype html>
   <link rel=\"stylesheet\" href=\"/static/maplibre-gl.css\" />
   <style>
     html, body, #map { margin:0; padding:0; width:100%; height:100%; }
-    .panel { position: absolute; z-index: 3; top: 10px; left: 10px; background: rgba(255,255,255,0.96); border-radius: 10px; padding: 10px 12px; font-family: sans-serif; width: 360px; box-shadow: 0 2px 12px rgba(0,0,0,.15); }
-    .small { font-size: 12px; color: #444; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; }
+    .panel {
+      position: absolute;
+      z-index: 3;
+      top: 14px;
+      left: 14px;
+      background: rgba(255,255,255,0.82);
+      border: 1px solid rgba(211, 222, 237, 0.9);
+      border-radius: 14px;
+      padding: 12px 14px;
+      width: 380px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 12px 28px rgba(30, 41, 59, 0.14);
+    }
+    .panel-head { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .traffic { display:flex; gap:6px; align-items:center; }
+    .traffic i { width:10px; height:10px; border-radius:50%; display:inline-block; }
+    .traffic .r { background:#ff5f57; }
+    .traffic .y { background:#febc2e; }
+    .traffic .g { background:#28c840; }
+    .small { font-size: 12px; color: #5d6a7f; }
     .search { margin-top: 8px; }
-    .search input, .search select { width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #bbb; }
-    .results { margin-top: 6px; max-height: 220px; overflow: auto; border: 1px solid #ddd; border-radius: 8px; background: #fff; }
-    .result { padding: 8px; border-bottom: 1px solid #eee; cursor: pointer; }
-    .result:hover { background: #f4f8ff; }
+    .search input, .search select {
+      width: 100%;
+      padding: 9px 10px;
+      border-radius: 10px;
+      border: 1px solid #d6deec;
+      background: #ffffff;
+      color: #1f2937;
+      outline: none;
+    }
+    .search input:focus, .search select:focus {
+      border-color: #7cb8ff;
+      box-shadow: 0 0 0 3px rgba(10,132,255,0.14);
+    }
+    .results { margin-top: 6px; max-height: 220px; overflow: auto; border: 1px solid #dfe6f3; border-radius: 10px; background: #fff; }
+    .result { padding: 9px; border-bottom: 1px solid #edf1f7; cursor: pointer; }
+    .result:hover { background: #f3f8ff; }
     .hidden { display: none; }
-    .town-label { background: rgba(255,255,255,0.92); border: 1px solid #888; border-radius: 8px; padding: 1px 5px; font-size: 11px; font-family: sans-serif; color: #222; white-space: nowrap; }
+    .town-label { background: rgba(255,255,255,0.92); border: 1px solid #a7b6cc; border-radius: 8px; padding: 1px 5px; font-size: 11px; color: #1f2937; white-space: nowrap; }
   </style>
 </head>
 <body>
   <div class=\"panel\">
-    <div><strong id=\"title\">Offgrid Intel Kit Map</strong></div>
+    <div class=\"panel-head\">
+      <div class=\"traffic\"><i class=\"r\"></i><i class=\"y\"></i><i class=\"g\"></i></div>
+      <strong id=\"title\">Offgrid Intel Kit Map</strong>
+    </div>
     <div class=\"small\">Data: <span id=\"pmtilesName\"></span></div>
     <div class=\"search\">
       <select id=\"datasetSelect\"></select>
@@ -181,16 +231,18 @@ INDEX_HTML = """<!doctype html>
       map.on('moveend', refreshTownLabels);
 
       const input = document.getElementById('searchInput');
+      const hint = document.getElementById('searchHint');
       let timer;
       input.addEventListener('input', () => {
         clearTimeout(timer);
         const q = input.value.trim();
-        if (!q || q.length < 2) { setResults([]); return; }
+        if (!q || q.length < 2) { setResults([]); if (hint) hint.textContent = 'Offline place search depends on the local places index.'; return; }
         timer = setTimeout(async () => {
           try {
             const items = await fetch('/search?q=' + encodeURIComponent(q)).then(r => r.json());
             setResults(items);
-          } catch (_) { setResults([]); }
+            if (hint) hint.textContent = items.length ? `Found ${items.length} result${items.length === 1 ? '' : 's'}.` : 'No local place index matches. The map dataset still works.';
+          } catch (_) { setResults([]); if (hint) hint.textContent = 'Search unavailable right now.'; }
         }, 150);
       });
     }
@@ -211,11 +263,17 @@ def load_places():
     global PLACES
     if PLACES:
         return PLACES
-    if not PLACES_FILE.exists():
+    place_file = PLACES_FILE if PLACES_FILE.exists() else None
+    if place_file is None:
+        for cand in FALLBACK_PLACES_FILES:
+            if cand.exists():
+                place_file = cand
+                break
+    if place_file is None:
         PLACES = []
         return PLACES
     out = []
-    with PLACES_FILE.open("r", encoding="utf-8", errors="ignore") as f:
+    with place_file.open("r", encoding="utf-8", errors="ignore") as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -246,6 +304,10 @@ def load_config():
         data = dict(DEFAULT_CONFIG)
     for k, v in DEFAULT_CONFIG.items():
         data.setdefault(k, v)
+    datasets = list_datasets()
+    preferred = "usa.pmtiles" if "usa.pmtiles" in datasets else (datasets[0] if datasets else data.get("pmtiles", DEFAULT_CONFIG["pmtiles"]))
+    if not data.get("pmtiles") or data.get("pmtiles") not in datasets:
+        data["pmtiles"] = preferred
     # Keep older configs compatible but allow deeper zoom for trail-level detail.
     try:
         data["maxZoom"] = max(15, int(data.get("maxZoom", 15)))
@@ -256,7 +318,11 @@ def load_config():
 
 def list_datasets():
     ensure_layout()
-    return sorted([p.name for p in DATA_DIR.glob("*.pmtiles")])
+    names = {p.name for p in DATA_DIR.glob("*.pmtiles")}
+    for d in FALLBACK_DATA_DIRS:
+        if d.exists():
+            names.update(p.name for p in d.glob("*.pmtiles"))
+    return sorted(names)
 
 
 @app.get("/")
@@ -340,13 +406,27 @@ def towns():
 @app.get("/tiles/<path:name>")
 def tiles(name):
     ensure_layout()
-    return send_from_directory(DATA_DIR, name, conditional=True)
+    target = DATA_DIR / name
+    if target.exists():
+        return send_from_directory(DATA_DIR, name, conditional=True)
+    for d in FALLBACK_DATA_DIRS:
+        candidate = d / name
+        if candidate.exists():
+            return send_from_directory(d, name, conditional=True)
+    return ("Not found", 404)
 
 
 @app.get("/static/<path:name>")
 def static_assets(name):
     ensure_layout()
-    return send_from_directory(STATIC_DIR, name, conditional=True)
+    target = STATIC_DIR / name
+    if target.exists():
+        return send_from_directory(STATIC_DIR, name, conditional=True)
+    for d in FALLBACK_STATIC_DIRS:
+        candidate = d / name
+        if candidate.exists():
+            return send_from_directory(d, name, conditional=True)
+    return ("Not found", 404)
 
 
 if __name__ == "__main__":
