@@ -50,6 +50,12 @@ Then open:
 - Offline map: `http://<HOST_IP>:8091`
 - Offline AI (llama.cpp): `http://<HOST_IP>:8092`
 
+### AI model switcher (UI)
+
+- Put `.gguf` files in `models/local-qwen/` (or `AI_MODELS_DIR`)
+- Use the Dashboard `Offline AI` panel selector + `Switch Model`
+- The UI updates `/etc/default/wiki-offline-kit` and restarts `llama-server.service`
+
 ## Important Safety & License Notice
 
 This project redistributes third-party offline knowledge content (including medical/infrastructure/technical materials). Content is provided for informational purposes only and may be incomplete, outdated, or inaccurate.

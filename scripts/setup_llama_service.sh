@@ -5,6 +5,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "${SCRIPT_DIR}/layout.sh"
 
+# Preserve previously selected model when re-running setup
+if [[ -f /etc/default/wiki-offline-kit ]]; then
+  PREV_MODEL="$(grep '^LLAMA_MODEL=' /etc/default/wiki-offline-kit | head -n1 | cut -d= -f2- || true)"
+  if [[ -n "${PREV_MODEL}" && -f "${PREV_MODEL}" ]]; then
+    export LLAMA_MODEL="${PREV_MODEL}"
+    export AI_MODEL_NAME="$(basename "${PREV_MODEL}")"
+  fi
+fi
+
 write_layout_env_file "${WIKI_RUNTIME_ROOT}/layout.env"
 sudo install -m 0644 "${WIKI_RUNTIME_ROOT}/layout.env" /etc/default/wiki-offline-kit
 
@@ -32,7 +41,8 @@ Type=simple
 User=${RUN_USER}
 EnvironmentFile=/etc/default/wiki-offline-kit
 WorkingDirectory=${WIKI_KIT_ROOT}
-ExecStart=${LLAMA_BIN} -m ${LLAMA_MODEL} --host ${LLAMA_HOST} --port ${LLAMA_PORT} -c ${LLAMA_CTX} -t ${LLAMA_THREADS}
+ExecStart=${LLAMA_BIN} -m \${LLAMA_MODEL} --host \${LLAMA_HOST} --port \${LLAMA_PORT} -c \${LLAMA_CTX} -t \${LLAMA_THREADS}
+
 Restart=always
 RestartSec=2
 

@@ -9,6 +9,7 @@ import shlex
 import os
 import json
 import re
+import time
 
 app = Flask(__name__)
 
@@ -214,7 +215,34 @@ HTML = """
       const output = document.getElementById('miniAiOutput');
       const spinner = document.getElementById('miniAiSpinner');
       const modelSel = document.getElementById('miniAiModel');
+      const modelSwitch = document.getElementById('miniAiSwitch');
+      const modelStatus = document.getElementById('miniAiModelStatus');
       if (!prompt || !send || !output) return;
+
+      async function switchModel() {
+        if (!modelSel) return;
+        const chosen = (modelSel.value || '').trim();
+        if (!chosen) return;
+        if (modelStatus) modelStatus.textContent = 'Switching model...';
+        try {
+          const r = await fetch('/api/ai/model/select', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ model: chosen })
+          });
+          const data = await r.json();
+          if (!r.ok || !data.ok) throw new Error(data.error || 'Switch failed');
+          if (modelStatus) modelStatus.textContent = '✅ ' + (data.message || 'Model switched');
+          const aiLabel = document.getElementById('aiStatusLabel');
+          const aiDetail = document.getElementById('aiStatusDetail');
+          if (data.status) {
+            if (aiLabel) aiLabel.textContent = data.status.label || 'AI online';
+            if (aiDetail) aiDetail.textContent = data.status.detail || '';
+          }
+        } catch (e) {
+          if (modelStatus) modelStatus.textContent = '⚠️ ' + e.message;
+        }
+      }
 
       async function run() {
         const value = (prompt.value || '').trim();
@@ -236,7 +264,7 @@ HTML = """
           const r = await fetch('/api/ai/stream', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ prompt: value, context: '', model_choice: (modelSel ? modelSel.value : 'q8') })
+            body: JSON.stringify({ prompt: value, context: '', model_choice: (modelSel ? modelSel.value : '') })
           });
           if (!r.ok || !r.body) {
             assistantBubble.textContent = 'Offline AI request failed.';
@@ -262,6 +290,7 @@ HTML = """
       }
 
       send.addEventListener('click', run);
+      if (modelSwitch) modelSwitch.addEventListener('click', switchModel);
       prompt.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
@@ -576,19 +605,22 @@ HTML = """
           <h2>Offline AI</h2>
           <p class="subcopy">Minimal live local chat widget.</p>
         </div>
-        <div class="status-pill"><span class="dot {{ 'warn' if not ai_status.ok else '' }}"></span>{{ ai_status.label }}</div>
+        <div class="status-pill"><span class="dot {{ 'warn' if not ai_status.ok else '' }}"></span><span id="aiStatusLabel">{{ ai_status.label }}</span></div>
       </div>
-      <p class="subcopy" style="margin-top:8px;">{{ ai_status.detail }}</p>
+      <p id="aiStatusDetail" class="subcopy" style="margin-top:8px;">{{ ai_status.detail }}</p>
 
       <div class="chat-shell" id="miniAiShell">
         <div id="miniAiOutput" class="chat-output"><div class="chat-bubble assistant">Offline AI ready.</div></div>
         <div id="miniAiSpinner" class="chat-spinner"><span class="spinner-dot"></span><span class="spinner-dot"></span><span class="spinner-dot"></span><span>Thinking locally…</span></div>
         <div style="display:flex; gap:12px; align-items:center; margin-top:14px; flex-wrap:wrap;">
-          <label class="muted" for="miniAiModel">AI Mode</label>
+          <label class="muted" for="miniAiModel">AI Model</label>
           <select id="miniAiModel" class="select" style="max-width:260px;">
-            <option value="q8" selected>Best Quality (Q8)</option>
-            <option value="q4">Lower Resource (Q4)</option>
+            {% for m in ai_models %}
+              <option value="{{ m.path }}" {% if m.path == ai_model %}selected{% endif %}>{{ m.name }}</option>
+            {% endfor %}
           </select>
+          <button id="miniAiSwitch" class="btn btn-soft" type="button">Switch Model</button>
+          <span id="miniAiModelStatus" class="muted">Current: {{ ai_model_name }}</span>
         </div>
         <textarea id="miniAiPrompt" class="textarea" style="min-height:110px; margin-top:14px;" placeholder="Ask anything..."></textarea>
         <div style="display:flex; justify-content:flex-end; margin-top:12px;">
@@ -876,9 +908,11 @@ async function play(){
 AI_BASE = os.environ.get("AI_BASE", f"http://127.0.0.1:{os.environ.get('LLAMA_PORT', '8092')}")
 AI_MODEL_Q8 = os.environ.get("LLAMA_MODEL_Q8", str(KIT_ROOT / "models/local-qwen/Huihui-Qwen3.5-4B-abliterated.Q8_0.gguf"))
 AI_MODEL_Q4 = os.environ.get("LLAMA_MODEL_Q4", str(KIT_ROOT / "models/local-qwen/Huihui-Qwen3.5-4B-abliterated.Q4_K_M.gguf"))
+AI_MODELS_DIR = Path(os.environ.get("AI_MODELS_DIR", str(KIT_ROOT / "models/local-qwen")))
 AI_MODEL = os.environ.get("LLAMA_MODEL", AI_MODEL_Q8)
 AI_MODEL_NAME = os.environ.get("AI_MODEL_NAME", "local-model")
 AI_TIMEOUT = float(os.environ.get("AI_TIMEOUT", "600"))
+SET_MODEL_SCRIPT = KIT_ROOT / "scripts/set_llama_model.sh"
 
 LANGUAGE_LABELS = {
     "auto": "Auto Detect",
@@ -1288,10 +1322,47 @@ def _is_under_roots(path: Path, roots):
 
 
 def resolve_ai_model(choice: str | None = None) -> str:
-    choice = (choice or '').strip().lower()
-    if choice == 'q4':
+    choice_raw = (choice or '').strip()
+    choice_l = choice_raw.lower()
+    if choice_l == 'q4':
         return AI_MODEL_Q4
-    return AI_MODEL_Q8
+    if choice_l == 'q8':
+        return AI_MODEL_Q8
+    if choice_raw:
+        p = Path(choice_raw)
+        if not p.is_absolute():
+            p = AI_MODELS_DIR / p
+        try:
+            return str(p.resolve())
+        except Exception:
+            return str(p)
+    return AI_MODEL
+
+
+def discover_ai_models():
+    out = []
+    try:
+        if AI_MODELS_DIR.exists():
+            for p in sorted(AI_MODELS_DIR.rglob("*.gguf")):
+                try:
+                    rp = p.resolve()
+                except Exception:
+                    rp = p
+                out.append({"name": p.name, "path": str(rp)})
+    except Exception:
+        pass
+    if not out:
+        out = [{"name": Path(AI_MODEL).name, "path": AI_MODEL}]
+    return out
+
+
+def _model_allowed(model_path: Path) -> bool:
+    try:
+        base = AI_MODELS_DIR.resolve()
+        rp = model_path.resolve()
+        return rp == base or base in rp.parents
+    except Exception:
+        return False
 
 
 def _llama_model_id() -> str:
@@ -1309,6 +1380,18 @@ def _llama_model_id() -> str:
     return AI_MODEL_NAME
 
 
+def current_selected_model_path() -> str:
+    envf = Path("/etc/default/wiki-offline-kit")
+    try:
+        if envf.exists():
+            for line in envf.read_text().splitlines():
+                if line.startswith("LLAMA_MODEL="):
+                    return line.split("=", 1)[1].strip()
+    except Exception:
+        pass
+    return AI_MODEL
+
+
 def ai_status_info():
     try:
         r = requests.get(f"{AI_BASE}/v1/models", timeout=5)
@@ -1316,7 +1399,7 @@ def ai_status_info():
             data = r.json()
             models = data.get("data") or []
             names = [m.get("id") for m in models if m.get("id")]
-            selected = Path(AI_MODEL).name
+            selected = Path(current_selected_model_path()).name
             return {
                 "ok": True,
                 "label": f"AI online (llama.cpp)",
@@ -1475,6 +1558,10 @@ def build_page(extra_scan_dir: str, do_resync: bool, tr_input: str = "", tr_sour
     health_summary = health_summary_text()
     language_options = language_options_for_installed()
     ai_status = ai_status_info()
+    selected_ai_model = current_selected_model_path()
+    ai_models = discover_ai_models()
+    if selected_ai_model and all(m.get("path") != selected_ai_model for m in ai_models):
+        ai_models.insert(0, {"name": Path(selected_ai_model).name, "path": selected_ai_model})
     ai_prompt = request.args.get("ai_prompt", "")
     ai_context = request.args.get("ai_context", "")
     ai_output = request.args.get("ai_output", "")
@@ -1502,7 +1589,9 @@ def build_page(extra_scan_dir: str, do_resync: bool, tr_input: str = "", tr_sour
         wiki_results=wiki_results or [],
         qa_status=qa_status,
         ai_status=ai_status,
-        ai_model=AI_MODEL,
+        ai_models=ai_models,
+        ai_model=selected_ai_model,
+        ai_model_name=Path(selected_ai_model).name,
         ai_prompt=ai_prompt,
         ai_context=ai_context,
         ai_output=ai_output,
@@ -1773,6 +1862,65 @@ def translate_form():
 @app.get("/api/ai/status")
 def api_ai_status():
     return jsonify(ai_status_info())
+
+
+@app.get("/api/ai/models")
+def api_ai_models():
+    selected = current_selected_model_path()
+    models = discover_ai_models()
+    return jsonify({
+        "ok": True,
+        "selected": selected,
+        "models": models,
+    })
+
+
+@app.post("/api/ai/model/select")
+def api_ai_model_select():
+    payload = request.get_json(silent=True) or {}
+    raw_model = (payload.get("model") or "").strip()
+    if not raw_model:
+        return jsonify({"ok": False, "error": "Model is required."}), 400
+
+    model_path = Path(resolve_ai_model(raw_model))
+    if not model_path.exists() or not model_path.is_file() or model_path.suffix.lower() != ".gguf":
+        return jsonify({"ok": False, "error": "Model file not found."}), 400
+    if not _model_allowed(model_path):
+        return jsonify({"ok": False, "error": f"Model must be inside {AI_MODELS_DIR}."}), 400
+    if not SET_MODEL_SCRIPT.exists():
+        return jsonify({"ok": False, "error": f"Missing helper script: {SET_MODEL_SCRIPT}"}), 500
+
+    try:
+        proc = subprocess.run(
+            ["sudo", "-n", str(SET_MODEL_SCRIPT), str(model_path)],
+            cwd=str(KIT_ROOT),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            timeout=120,
+        )
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"Switch failed: {e}"}), 500
+
+    out = (proc.stdout or "").strip()
+    if proc.returncode != 0:
+        return jsonify({"ok": False, "error": out or "Failed to switch model."}), 500
+
+    target_name = model_path.name
+    status = ai_status_info()
+    for _ in range(20):
+        status = ai_status_info()
+        detail = (status.get("detail") or "")
+        if status.get("ok") and target_name in detail:
+            break
+        time.sleep(1)
+
+    return jsonify({
+        "ok": True,
+        "message": f"Switched to {model_path.name}",
+        "output": out,
+        "status": status,
+    })
 
 
 @app.post("/ai_form")
