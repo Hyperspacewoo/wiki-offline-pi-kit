@@ -23,9 +23,6 @@ if [[ -f /etc/default/wiki-offline-kit ]]; then
   fi
 fi
 
-write_layout_env_file "${WIKI_RUNTIME_ROOT}/layout.env"
-sudo install -m 0644 "${WIKI_RUNTIME_ROOT}/layout.env" /etc/default/wiki-offline-kit
-
 if [[ ! -x "${LLAMA_BIN}" ]]; then
   echo "ERROR: llama-server binary missing: ${LLAMA_BIN}" >&2
   echo "Build it first under: ${LLAMA_CPP_ROOT}" >&2
@@ -33,10 +30,21 @@ if [[ ! -x "${LLAMA_BIN}" ]]; then
 fi
 
 if [[ ! -f "${LLAMA_MODEL}" ]]; then
-  echo "ERROR: default model missing: ${LLAMA_MODEL}" >&2
-  echo "Set LLAMA_MODEL in /etc/default/wiki-offline-kit or copy model into models/local-qwen." >&2
-  exit 1
+  FIRST_MODEL="$(find "${AI_MODELS_DIR}" -type f -name '*.gguf' 2>/dev/null | sort | head -n1 || true)"
+  if [[ -n "${FIRST_MODEL}" && -f "${FIRST_MODEL}" ]]; then
+    export LLAMA_MODEL="${FIRST_MODEL}"
+    export AI_MODEL_NAME="$(basename "${FIRST_MODEL}")"
+    echo "LLAMA_MODEL not found, auto-selected: ${LLAMA_MODEL}"
+  else
+    echo "WARN: no .gguf model found in ${AI_MODELS_DIR}. Skipping llama-server service setup." >&2
+    write_layout_env_file "${WIKI_RUNTIME_ROOT}/layout.env"
+    sudo install -m 0644 "${WIKI_RUNTIME_ROOT}/layout.env" /etc/default/wiki-offline-kit
+    exit 0
+  fi
 fi
+
+write_layout_env_file "${WIKI_RUNTIME_ROOT}/layout.env"
+sudo install -m 0644 "${WIKI_RUNTIME_ROOT}/layout.env" /etc/default/wiki-offline-kit
 
 echo "Creating /etc/systemd/system/llama-server.service"
 sudo tee /etc/systemd/system/llama-server.service > /dev/null <<EOF

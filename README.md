@@ -24,6 +24,12 @@ Offline AI is powered by local `llama.cpp` (`llama-server`).
 ./START_LINUX.sh
 ```
 
+What this now sets up automatically from this single package:
+- Python runtime + dashboard services
+- Offline map UI service
+- Translator runtime + Argos language packs (best effort, defaults: `en↔es`)
+- `llama.cpp` clone/build + `llama-server.service`
+
 Then open:
 - Dashboard: `http://<HOST_IP>:8090`
 - First-run wizard: `http://<HOST_IP>:8090/setup`

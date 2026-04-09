@@ -18,7 +18,7 @@ done
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-chmod +x ./install_pi_wiki.sh ./setup_kiwix_service.sh ./setup_zim_ui_service.sh ./setup_sudoers_for_zim_ui.sh ./setup_offline_map_service.sh ./setup_offline_map_assets.sh ./setup_offline_place_index.sh ./download_osm_pmtiles.sh ./wikiask.py ./zim_selector_ui.py ./offline_map_ui.py ./kiwix-start-from-list.sh ./set_llama_model.sh
+chmod +x ./install_pi_wiki.sh ./setup_kiwix_service.sh ./setup_zim_ui_service.sh ./setup_sudoers_for_zim_ui.sh ./setup_offline_map_service.sh ./setup_offline_map_assets.sh ./setup_offline_place_index.sh ./download_osm_pmtiles.sh ./wikiask.py ./zim_selector_ui.py ./offline_map_ui.py ./kiwix-start-from-list.sh ./set_llama_model.sh ./setup_translator.sh ./setup_llama_cpp.sh
 chmod +x ./start_llama_server.sh ./setup_llama_service.sh
 
 echo "==> Running installer..."
@@ -36,6 +36,9 @@ echo "==> Enabling passwordless restart/status for UI-triggered service actions.
 echo "==> Setting up offline map assets + service (port 8091)..."
 ./setup_offline_map_assets.sh
 ./setup_offline_map_service.sh
+
+echo "==> Ensuring llama.cpp source + build..."
+./setup_llama_cpp.sh
 
 echo "==> Setting up llama.cpp AI service (port 8092)..."
 ./setup_llama_service.sh
