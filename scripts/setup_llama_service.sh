@@ -2,6 +2,15 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Load installed environment first so setup stays aligned with deployed runtime paths.
+if [[ -f /etc/default/wiki-offline-kit ]]; then
+  set -a
+  # shellcheck source=/dev/null
+  source /etc/default/wiki-offline-kit
+  set +a
+fi
+
 # shellcheck source=/dev/null
 source "${SCRIPT_DIR}/layout.sh"
 

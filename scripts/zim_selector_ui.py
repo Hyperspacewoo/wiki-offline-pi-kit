@@ -945,12 +945,18 @@ def format_size(n: int) -> str:
 def build_roots(extra: str):
     roots = []
     for p in DEFAULT_ROOTS:
-        if p.exists() and p.is_dir():
-            roots.append(p)
+        try:
+            if p.exists() and p.is_dir():
+                roots.append(p)
+        except Exception:
+            continue
     if extra:
         ep = Path(extra)
-        if ep.exists() and ep.is_dir() and ep not in roots:
-            roots.append(ep)
+        try:
+            if ep.exists() and ep.is_dir() and ep not in roots:
+                roots.append(ep)
+        except Exception:
+            pass
     out, seen = [], set()
     for r in roots:
         s = str(r.resolve())
