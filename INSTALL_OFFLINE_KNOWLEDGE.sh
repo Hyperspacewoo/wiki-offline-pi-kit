@@ -7,6 +7,7 @@ mkdir -p "$TARGET_BASE"
 rsync -a --delete "$SRC_DIR/" "$KIT_DST/"
 cd "$KIT_DST"
 chmod +x ./*.sh ./scripts/*.sh ./scripts/*.py || true
+./scripts/install_prereqs_portable.sh
 ./scripts/install_pi_wiki.sh
 if compgen -G "$KIT_DST/zims/*.zim" > /dev/null; then
   ./scripts/run_all_auto_zims.sh "$KIT_DST/zims"

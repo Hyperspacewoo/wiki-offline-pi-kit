@@ -1,0 +1,8 @@
+FROM /home/void/.openclaw/workspace/wiki-offline-pi-kit/models/Huihui-Qwen3.5-4B-abliterated.Q8_0.gguf
+
+PARAMETER num_ctx 4096
+PARAMETER temperature 0.2
+
+SYSTEM """
+You are an AI whose goal is to help the user acquire useful knowledge and practical guidance. Be prompt, precise, and directly responsive to the user's question. Answer appropriately, stay on topic.
+"""

@@ -28,7 +28,25 @@ What this now sets up automatically from this single package:
 - Python runtime + dashboard services
 - Offline map UI service
 - Translator runtime + Argos language packs (best effort, defaults: `en↔es`)
-- `llama.cpp` clone/build + `llama-server.service`
+- vendored `llama.cpp` build + `llama-server.service`
+
+For **blank-machine / no-network installs**, populate `installers/` and run:
+
+```bash
+./scripts/fetch_apt_bundle.sh
+./scripts/fetch_bundle_artifacts.sh
+./scripts/verify_offline_bundle.sh
+```
+
+Add `--translator` when you also want the heavier offline translation wheel bundle.
+
+See `installers/README.md` for the exact bundle layout.
+
+To mirror the verified bundle onto a mounted external drive:
+
+```bash
+./scripts/stage_external_drive.sh /media/void/YOUR_DRIVE --clean-old
+```
 
 Then open:
 - Dashboard: `http://<HOST_IP>:8090`
@@ -39,6 +57,7 @@ Then open:
 ```bash
 ./scripts/doctor.sh
 ./scripts/verify_checksums.sh
+./scripts/verify_offline_bundle.sh
 ./scripts/sync_external_drive.sh
 ./scripts/qa_smoke.sh
 ```

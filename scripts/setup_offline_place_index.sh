@@ -8,11 +8,21 @@ source "${SCRIPT_DIR}/layout.sh"
 OUT="${1:-${WIKI_MAPS_DIR}/data/us_places.tsv}"
 TMP_DIR="$(mktemp -d)"
 ZIP_URL="https://download.geonames.org/export/dump/US.zip"
+LOCAL_ZIP="${OFFLINE_DATASETS_DIR}/US.zip"
 
 mkdir -p "$(dirname "$OUT")"
 
-echo "Downloading US places dataset..."
-curl -L -o "$TMP_DIR/US.zip" "$ZIP_URL"
+if [[ -f "$LOCAL_ZIP" ]]; then
+  echo "Using bundled GeoNames dataset: $LOCAL_ZIP"
+  cp -f "$LOCAL_ZIP" "$TMP_DIR/US.zip"
+elif [[ "${OFFLINE_ONLY}" == "1" ]]; then
+  echo "OFFLINE_ONLY=1 and missing dataset: $LOCAL_ZIP" >&2
+  rm -rf "$TMP_DIR"
+  exit 1
+else
+  echo "Downloading US places dataset..."
+  curl -L -o "$TMP_DIR/US.zip" "$ZIP_URL"
+fi
 
 unzip -q "$TMP_DIR/US.zip" -d "$TMP_DIR"
 

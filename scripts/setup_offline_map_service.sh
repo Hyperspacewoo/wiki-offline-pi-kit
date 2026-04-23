@@ -38,7 +38,13 @@ if [[ ! -f "${WIKI_MAPS_DIR}/data/us_places.tsv" ]]; then
   "${SCRIPT_DIR}/setup_offline_place_index.sh" || true
 fi
 if [[ -z "$(find "${WIKI_MAPS_DIR}/data" -maxdepth 1 -type f -name '*.pmtiles' 2>/dev/null | head -n1 || true)" ]]; then
-  "${SCRIPT_DIR}/download_osm_pmtiles.sh" "-74.30,40.45,-73.65,40.95" "14" "${WIKI_MAPS_DIR}/data/nyc.pmtiles" || true
+  if [[ -d "${MAP_BUNDLES_DIR}" ]] && find "${MAP_BUNDLES_DIR}" -maxdepth 1 -type f -name '*.pmtiles' | grep -q .; then
+    cp -f "${MAP_BUNDLES_DIR}"/*.pmtiles "${WIKI_MAPS_DIR}/data/"
+  elif [[ "${OFFLINE_ONLY}" == "1" ]]; then
+    echo "OFFLINE_ONLY=1 and no bundled .pmtiles files found in ${MAP_BUNDLES_DIR}" >&2
+  else
+    "${SCRIPT_DIR}/download_osm_pmtiles.sh" "-74.30,40.45,-73.65,40.95" "14" "${WIKI_MAPS_DIR}/data/nyc.pmtiles" || true
+  fi
 fi
 
 write_layout_env_file "${WIKI_RUNTIME_ROOT}/layout.env"

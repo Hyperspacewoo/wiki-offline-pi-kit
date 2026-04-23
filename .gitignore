@@ -4,6 +4,15 @@
 *.zim*
 *.gguf
 llama.cpp/
+models/local-qwen/
+/installers/apt/
+/installers/argos/
+/installers/bin/
+/installers/datasets/
+/installers/map-assets/
+/installers/maps/
+/installers/python-wheels/
+/installers/*.exe
 
 # Python
 __pycache__/

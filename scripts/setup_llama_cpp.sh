@@ -5,13 +5,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "${SCRIPT_DIR}/layout.sh"
 
-echo "Installing llama.cpp build deps..."
-sudo apt-get update
-sudo apt-get install -y build-essential cmake git
+if ! command -v cmake >/dev/null 2>&1 || ! command -v make >/dev/null 2>&1 || ! command -v g++ >/dev/null 2>&1; then
+  echo "Installing llama.cpp build deps..."
+  "${WIKI_KIT_ROOT}/scripts/install_prereqs_portable.sh"
+fi
 
-if [[ ! -d "${LLAMA_CPP_ROOT}" ]]; then
-  echo "Cloning llama.cpp into ${LLAMA_CPP_ROOT}"
-  git clone https://github.com/ggml-org/llama.cpp.git "${LLAMA_CPP_ROOT}"
+if [[ ! -f "${LLAMA_CPP_ROOT}/CMakeLists.txt" ]]; then
+  echo "Ensuring llama.cpp source is present..."
+  "${WIKI_KIT_ROOT}/scripts/install_prereqs_portable.sh"
 fi
 
 if [[ ! -f "${LLAMA_CPP_ROOT}/CMakeLists.txt" ]]; then
