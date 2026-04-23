@@ -459,60 +459,244 @@ HTML = """
     .spinner-dot:nth-child(3) { animation-delay: .3s; }
     @keyframes pulse { 0%, 80%, 100% { opacity: .35; } 40% { opacity: 1; } }
 
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.95fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .hero-card {
+      padding: 24px;
+      border-radius: 20px;
+      background:
+        radial-gradient(circle at top right, rgba(90, 200, 250, 0.18), transparent 26%),
+        linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,251,255,0.92) 100%);
+      border: 1px solid rgba(219, 226, 239, 0.9);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      background: rgba(10,132,255,0.08);
+      border: 1px solid rgba(10,132,255,0.12);
+      color: #2458a6;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      margin-bottom: 14px;
+    }
+    .hero-title { font-size: 38px; line-height: 1.05; margin-bottom: 10px; }
+    .hero-copy { font-size: 15px; max-width: 58ch; margin-bottom: 18px; }
+    .meta-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 14px 0 18px;
+    }
+    .meta-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 36px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.82);
+      border: 1px solid rgba(219, 226, 239, 0.9);
+      color: #475569;
+      font-size: 13px;
+    }
+    .meta-pill strong { color: var(--text); }
+    .hero-actions { margin-bottom: 10px; }
+    .hero-actions .btn { min-height: 44px; padding: 11px 14px; }
+    .hero-note {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(219,226,239,0.9);
+      color: #526076;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .system-rail {
+      display: grid;
+      gap: 12px;
+      padding: 18px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(248,251,255,0.88));
+      border: 1px solid rgba(219, 226, 239, 0.95);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.65);
+    }
+    .system-head {
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:flex-start;
+      flex-wrap:wrap;
+    }
+    .system-list { display:grid; gap:10px; }
+    .system-item {
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid #e5ebf5;
+      background: rgba(255,255,255,0.88);
+    }
+    .system-item label {
+      display:block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .system-item strong { display:block; font-size: 14px; }
+    .launch-grid {
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .launch-card {
+      display:block;
+      padding: 16px;
+      border-radius: 16px;
+      background: #fff;
+      border: 1px solid var(--line);
+      box-shadow: 0 8px 24px rgba(30, 41, 59, 0.05);
+      transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+    }
+    .launch-card:hover {
+      transform: translateY(-1px);
+      border-color: #c7ddff;
+      box-shadow: 0 12px 28px rgba(10,132,255,0.08);
+    }
+    .launch-kicker {
+      font-size: 12px;
+      color: #2458a6;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .launch-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .launch-copy { font-size: 13px; color: var(--muted); line-height: 1.45; }
+    .section-head {
+      display:flex;
+      justify-content:space-between;
+      gap:16px;
+      align-items:flex-start;
+      flex-wrap:wrap;
+      margin-bottom: 14px;
+    }
+    .section-head h2 { margin-bottom: 4px; }
+
     details summary { cursor: pointer; font-weight: 600; }
     .reveal, .reveal.show { opacity: 1; transform: none; }
 
     @media (max-width: 1100px) {
-      .layout, .split { grid-template-columns: 1fr; }
-      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .hero-grid, .layout, .split { grid-template-columns: 1fr; }
+      .launch-grid, .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .toolbar { grid-template-columns: 1fr; }
     }
     @media (max-width: 720px) {
       .shell { padding: 12px; }
       .section { padding: 14px; }
-      .stats-grid { grid-template-columns: 1fr; }
+      .hero-card { padding: 18px; }
+      .hero-title { font-size: 30px; }
+      .launch-grid, .stats-grid { grid-template-columns: 1fr; }
       .translator-row { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <main class="shell">
-    <section class="glass section reveal">
-      <div class="hero-top">
-        <h1 class="hero-title">Offgrid Intel Kit</h1>
-        <p class="hero-copy">Clean offline workspace for knowledge, maps, translation, and local AI.</p>
-        <div class="hero-actions">
-          <a class="btn btn-accent" href="http://{{ host_ip }}:8080" target="_blank">Open Knowledge</a>
-          <a class="btn btn-mint" href="http://{{ host_ip }}:8091">Open Maps</a>
-          <a class="btn btn-soft" href="http://{{ host_ip }}:8092" target="_blank">Open AI</a>
+    <section class="reveal">
+      <div class="hero-grid">
+        <div class="hero-card">
+          <div class="eyebrow">Offline appliance dashboard</div>
+          <div class="hero-top">
+            <h1 class="hero-title">Offgrid Intel Kit</h1>
+            <p class="hero-copy">A calmer control surface for local knowledge, maps, translation, and AI — designed to feel like one offline appliance instead of a pile of tools.</p>
+            <div class="meta-row">
+              <div class="meta-pill"><strong>{{ total }}</strong> knowledge packs ready</div>
+              <div class="meta-pill"><strong>{{ total_size }}</strong> local content</div>
+              <div class="meta-pill"><strong>{{ roots_count }}</strong> storage roots scanned</div>
+            </div>
+            <div class="hero-actions">
+              <a class="btn btn-accent" href="http://{{ host_ip }}:8080" target="_blank">Open Knowledge</a>
+              <a class="btn btn-mint" href="http://{{ host_ip }}:8091">Open Maps</a>
+              <a class="btn btn-soft" href="http://{{ host_ip }}:8092" target="_blank">Open AI</a>
+              <a class="btn btn-soft" href="#translator">Translate</a>
+            </div>
+            <div class="hero-note">
+              {{ translator_status }}
+              {% if sync_msg %}<br><strong>Latest sync:</strong> {{ sync_msg }}{% endif %}
+            </div>
+          </div>
         </div>
-        <p class="subcopy">{{ translator_status }}</p>
-      </div>
 
-      <div class="stats-grid">
-        <div class="glass stat-card"><div class="stat-label">Discovered ZIM files</div><div class="stat-value">{{ total }}</div></div>
-        <div class="glass stat-card"><div class="stat-label">Loaded into Kiwix</div><div class="stat-value">{{ loaded_count }}</div></div>
-        <div class="glass stat-card"><div class="stat-label">Storage footprint</div><div class="stat-value">{{ total_size }}</div></div>
-        <div class="glass stat-card"><div class="stat-label">Roots scanned</div><div class="stat-value">{{ roots_count }}</div></div>
+        <aside class="system-rail glass">
+          <div class="system-head">
+            <div>
+              <h2 style="margin:0 0 4px 0;">System snapshot</h2>
+              <p class="muted small">What matters right now, at a glance.</p>
+            </div>
+            <div class="status-pill"><span class="dot {{ 'warn' if not ai_status.ok else '' }}"></span>{{ ai_status.label }}</div>
+          </div>
+          <div class="system-list">
+            <div class="system-item">
+              <label>Library health</label>
+              <strong>{{ loaded_count }} packs loaded into Kiwix</strong>
+              <div class="small muted">{{ health_summary }}</div>
+            </div>
+            <div class="system-item">
+              <label>Translator</label>
+              <strong>{{ translator_status }}</strong>
+              <div class="small muted">{{ translator_offline_warning or 'Offline language tools look ready.' }}</div>
+            </div>
+            <div class="system-item">
+              <label>AI runtime</label>
+              <strong>{{ ai_status.detail }}</strong>
+              <div class="small muted">Current model: {{ ai_model_name }}</div>
+            </div>
+          </div>
+        </aside>
       </div>
-      {% if sync_msg %}<p class="subcopy" style="margin-top:14px;">{{ sync_msg }}</p>{% endif %}
     </section>
 
     <section class="glass section reveal">
-      <div class="action-row">
-        <a class="btn btn-accent" href="http://{{ host_ip }}:8080" target="_blank">Knowledge</a>
-        <a class="btn btn-mint" href="http://{{ host_ip }}:8091">Maps</a>
-        <a class="btn btn-soft" href="http://{{ host_ip }}:8092" target="_blank">AI</a>
-        <a class="btn btn-soft" href="#translator">Translate</a>
-        <a class="btn btn-soft" href="/ebooks">Library</a>
-        <a class="btn btn-soft" href="/morse">Morse</a>
-        <a class="btn btn-soft" href="/help">Support</a>
+      <div class="section-head">
+        <div>
+          <h2>Launchpad</h2>
+          <p class="subcopy">Fast paths into the parts people actually use, plus one place to refresh the library.</p>
+        </div>
       </div>
-      <div class="toolbar" style="margin-top:16px; grid-template-columns: 1fr auto;">
-        <input id="extraDir" class="input" type="text" placeholder="Optional extra folder to include" value="{{ scan_dir }}" />
+      <div class="launch-grid">
+        <a class="launch-card" href="http://{{ host_ip }}:8080" target="_blank">
+          <div class="launch-kicker">Read</div>
+          <div class="launch-title">Knowledge</div>
+          <div class="launch-copy">Open the offline reader with the current ZIM stack.</div>
+        </a>
+        <a class="launch-card" href="http://{{ host_ip }}:8091">
+          <div class="launch-kicker">Navigate</div>
+          <div class="launch-title">Maps</div>
+          <div class="launch-copy">Browse local PMTiles datasets and search towns offline.</div>
+        </a>
+        <a class="launch-card" href="/ebooks">
+          <div class="launch-kicker">Browse</div>
+          <div class="launch-title">Library</div>
+          <div class="launch-copy">Find PDFs and ebooks living alongside the knowledge kit.</div>
+        </a>
+        <a class="launch-card" href="/help">
+          <div class="launch-kicker">Support</div>
+          <div class="launch-title">Help & recovery</div>
+          <div class="launch-copy">Get URLs, service checks, and install troubleshooting fast.</div>
+        </a>
+      </div>
+      <div class="toolbar" style="margin-top:4px; grid-template-columns: 1fr auto;">
+        <input id="extraDir" class="input" type="text" placeholder="Optional extra folder to include in scans" value="{{ scan_dir }}" />
         <button class="btn btn-accent" onclick="rescan()">Rescan + Sync All ZIMs</button>
       </div>
-      <p class="subcopy">{{ roots|join(' • ') }}</p>
+      <p class="subcopy">Scanning roots: {{ roots|join(' • ') }}</p>
     </section>
 
     <section class="glass section reveal">

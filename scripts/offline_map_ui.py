@@ -51,72 +51,144 @@ INDEX_HTML = """<!doctype html>
   <title>Offgrid Intel Kit Map</title>
   <link rel=\"stylesheet\" href=\"/static/maplibre-gl.css\" />
   <style>
+    :root {
+      --panel-bg: rgba(255,255,255,0.84);
+      --panel-line: rgba(211, 222, 237, 0.95);
+      --panel-shadow: 0 18px 36px rgba(15, 23, 42, 0.16);
+      --text: #18212f;
+      --muted: #5d6a7f;
+      --accent: #0a84ff;
+      --accent-soft: rgba(10,132,255,0.08);
+    }
     html, body, #map { margin:0; padding:0; width:100%; height:100%; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      color: var(--text);
+      background: #dfe7f2;
+    }
     .panel {
       position: absolute;
       z-index: 3;
-      top: 14px;
-      left: 14px;
-      background: rgba(255,255,255,0.82);
-      border: 1px solid rgba(211, 222, 237, 0.9);
-      border-radius: 14px;
-      padding: 12px 14px;
-      width: 380px;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      box-shadow: 0 12px 28px rgba(30, 41, 59, 0.14);
+      top: 16px;
+      left: 16px;
+      width: min(420px, calc(100vw - 32px));
+      padding: 16px;
+      border-radius: 20px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-line);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: var(--panel-shadow);
     }
-    .panel-head { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .panel-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
     .traffic { display:flex; gap:6px; align-items:center; }
     .traffic i { width:10px; height:10px; border-radius:50%; display:inline-block; }
     .traffic .r { background:#ff5f57; }
     .traffic .y { background:#febc2e; }
     .traffic .g { background:#28c840; }
-    .small { font-size: 12px; color: #5d6a7f; }
-    .search { margin-top: 8px; }
-    .search input, .search select {
+    .eyebrow {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      min-height:28px;
+      padding: 6px 10px;
+      border-radius:999px;
+      background: var(--accent-soft);
+      border: 1px solid rgba(10,132,255,0.12);
+      color: #2458a6;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .title { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 4px 0; }
+    .small { font-size: 12px; color: var(--muted); }
+    .subtle { margin-top: 6px; line-height: 1.45; }
+    .search { margin-top: 10px; }
+    .search input, .search select, .panel-button {
       width: 100%;
-      padding: 9px 10px;
-      border-radius: 10px;
+      padding: 10px 11px;
+      border-radius: 12px;
       border: 1px solid #d6deec;
-      background: #ffffff;
+      background: rgba(255,255,255,0.92);
       color: #1f2937;
       outline: none;
+      box-sizing: border-box;
     }
     .search input:focus, .search select:focus {
       border-color: #7cb8ff;
       box-shadow: 0 0 0 3px rgba(10,132,255,0.14);
     }
-    .results { margin-top: 6px; max-height: 220px; overflow: auto; border: 1px solid #dfe6f3; border-radius: 10px; background: #fff; }
-    .result { padding: 9px; border-bottom: 1px solid #edf1f7; cursor: pointer; }
+    .results { margin-top: 6px; max-height: 220px; overflow: auto; border: 1px solid #dfe6f3; border-radius: 12px; background: rgba(255,255,255,0.96); }
+    .result { padding: 10px 11px; border-bottom: 1px solid #edf1f7; cursor: pointer; }
     .result:hover { background: #f3f8ff; }
     .hidden { display: none; }
+    .panel-actions {
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .panel-button {
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      cursor:pointer;
+      font-weight: 600;
+      transition: background-color .14s ease, border-color .14s ease, transform .14s ease;
+    }
+    .panel-button:hover { background:#f3f8ff; border-color:#c7ddff; transform: translateY(-1px); }
+    .panel-button.primary { background:#0a84ff; border-color:#0a84ff; color:#fff; }
+    .hint {
+      margin-top: 8px;
+      padding: 10px 11px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.7);
+      border: 1px solid #e3eaf5;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
     .town-label { background: rgba(255,255,255,0.92); border: 1px solid #a7b6cc; border-radius: 8px; padding: 1px 5px; font-size: 11px; color: #1f2937; white-space: nowrap; }
+    @media (max-width: 720px) {
+      .panel { top: 10px; left: 10px; width: calc(100vw - 20px); padding: 14px; }
+      .panel-actions { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
-  <div class=\"panel\">
-    <div class=\"panel-head\">
-      <div class=\"traffic\"><i class=\"r\"></i><i class=\"y\"></i><i class=\"g\"></i></div>
-      <strong id=\"title\">Offgrid Intel Kit Map</strong>
+  <div class="panel">
+    <div class="eyebrow">Offline map workspace</div>
+    <div class="panel-head">
+      <div>
+        <div id="title" class="title">Offgrid Intel Kit Map</div>
+        <div class="small">Dataset: <span id="pmtilesName"></span></div>
+      </div>
+      <div class="traffic"><i class="r"></i><i class="y"></i><i class="g"></i></div>
     </div>
-    <div class=\"small\">Data: <span id=\"pmtilesName\"></span></div>
-    <div class=\"search\">
-      <select id=\"datasetSelect\"></select>
+    <div class="small subtle">Switch local map packs, search towns offline, then jump straight back to the main dashboard when you’re done.</div>
+    <div class="search">
+      <select id="datasetSelect"></select>
     </div>
-    <div class=\"search\">
-      <input id=\"searchInput\" placeholder=\"Search town/city (e.g., Bozeman, MT)\" />
-      <div id=\"results\" class=\"results hidden\"></div>
+    <div class="search">
+      <input id="searchInput" placeholder="Search town/city (e.g., Bozeman, MT)" />
+      <div id="results" class="results hidden"></div>
+      <div id="searchHint" class="hint">Search uses the local places index and gets more useful as you zoom in.</div>
+    </div>
+    <div class="panel-actions">
+      <button class="panel-button primary" type="button" onclick="resetView()">Reset view</button>
+      <a class="panel-button" href="/">Back to dashboard</a>
     </div>
   </div>
-  <div id=\"map\"></div>
+  <div id="map"></div>
 
   <script src=\"/static/maplibre-gl.js\"></script>
   <script src=\"/static/pmtiles.js\"></script>
   <script>
     let map;
     let townMarkers = [];
+    let initialView = { center: [-98.58, 39.83], zoom: 4 };
 
     function clearTownMarkers() {
       townMarkers.forEach(m => m.remove());
@@ -173,8 +245,17 @@ INDEX_HTML = """<!doctype html>
       box.classList.remove('hidden');
     }
 
+    function resetView() {
+      if (!map) return;
+      map.flyTo({ center: initialView.center, zoom: initialView.zoom });
+    }
+
     async function boot() {
       const cfg = await fetch('/config').then(r => r.json());
+      initialView = {
+        center: cfg.center || [-98.58, 39.83],
+        zoom: cfg.zoom || 4
+      };
       document.getElementById('title').textContent = cfg.title || 'Offgrid Intel Kit Map';
       document.getElementById('pmtilesName').textContent = cfg.pmtiles;
 
