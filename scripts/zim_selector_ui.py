@@ -178,6 +178,13 @@ HTML = """
       applyTheme(next);
     }
 
+    function fillMiniAiPrompt(text) {
+      const prompt = document.getElementById('miniAiPrompt');
+      if (!prompt) return;
+      prompt.value = text;
+      prompt.focus();
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       applyTheme(localStorage.getItem('wikiTheme') || 'light');
       applyFilters();
@@ -310,26 +317,29 @@ HTML = """
       margin: 0;
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
-      background: linear-gradient(180deg, #f7f9fd 0%, #edf2fa 100%);
+      background:
+        radial-gradient(circle at top left, rgba(90, 200, 250, 0.18), transparent 28%),
+        radial-gradient(circle at top right, rgba(10, 132, 255, 0.16), transparent 24%),
+        linear-gradient(180deg, #f8fbff 0%, #ecf2fb 52%, #e7eef9 100%);
     }
     a { color: inherit; text-decoration: none; }
     button, input, select, textarea { font: inherit; }
     h1, h2, h3, p { margin: 0; }
 
     .shell {
-      max-width: 1320px;
+      max-width: 1440px;
       margin: 0 auto;
-      padding: 22px;
+      padding: 26px;
     }
     .glass {
       background: var(--surface);
       border: 1px solid var(--line);
-      border-radius: 14px;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      box-shadow: 0 10px 30px rgba(30, 41, 59, 0.08);
+      border-radius: 22px;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: 0 18px 44px rgba(15, 23, 42, 0.09);
     }
-    .section { padding: 18px; margin-bottom: 12px; }
+    .section { padding: 22px; margin-bottom: 14px; }
     .hero-top { display: block; }
     .eyebrow { display: none; }
     .hero-title { font-size: 30px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
@@ -484,10 +494,12 @@ HTML = """
       padding: 24px;
       border-radius: 20px;
       background:
-        radial-gradient(circle at top right, rgba(90, 200, 250, 0.18), transparent 26%),
-        linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,251,255,0.92) 100%);
-      border: 1px solid rgba(219, 226, 239, 0.9);
-      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+        radial-gradient(circle at 16% 18%, rgba(255,255,255,0.8), transparent 20%),
+        radial-gradient(circle at top right, rgba(90, 200, 250, 0.28), transparent 28%),
+        radial-gradient(circle at bottom left, rgba(10,132,255,0.12), transparent 30%),
+        linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(244,249,255,0.95) 58%, rgba(236,244,255,0.96) 100%);
+      border: 1px solid rgba(219, 226, 239, 0.96);
+      box-shadow: 0 24px 56px rgba(15, 23, 42, 0.12);
     }
     .eyebrow {
       display: inline-flex;
@@ -499,12 +511,13 @@ HTML = """
       border: 1px solid rgba(10,132,255,0.12);
       color: #2458a6;
       font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.01em;
+      font-weight: 700;
+      letter-spacing: 0.02em;
       margin-bottom: 14px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
     }
-    .hero-title { font-size: 38px; line-height: 1.05; margin-bottom: 10px; }
-    .hero-copy { font-size: 15px; max-width: 58ch; margin-bottom: 18px; }
+    .hero-title { font-size: 44px; line-height: 0.98; margin-bottom: 12px; letter-spacing: -0.035em; }
+    .hero-copy { font-size: 16px; max-width: 58ch; margin-bottom: 18px; line-height: 1.55; }
     .meta-row {
       display: flex;
       gap: 10px;
@@ -541,9 +554,11 @@ HTML = """
       gap: 12px;
       padding: 18px;
       border-radius: 18px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(248,251,255,0.88));
+      background:
+        radial-gradient(circle at top right, rgba(122, 211, 252, 0.16), transparent 26%),
+        linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,251,255,0.9));
       border: 1px solid rgba(219, 226, 239, 0.95);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.65);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.65), 0 14px 32px rgba(15, 23, 42, 0.05);
     }
     .system-head {
       display:flex;
@@ -569,22 +584,24 @@ HTML = """
     .launch-grid {
       display:grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      margin-bottom: 16px;
+      gap: 14px;
+      margin-bottom: 18px;
     }
     .launch-card {
       display:block;
-      padding: 16px;
-      border-radius: 16px;
-      background: #fff;
-      border: 1px solid var(--line);
-      box-shadow: 0 8px 24px rgba(30, 41, 59, 0.05);
-      transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+      position: relative;
+      overflow: hidden;
+      padding: 18px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(247,250,255,0.94));
+      border: 1px solid rgba(219,226,239,0.96);
+      box-shadow: 0 14px 34px rgba(30, 41, 59, 0.08);
+      transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
     }
     .launch-card:hover {
-      transform: translateY(-1px);
-      border-color: #c7ddff;
-      box-shadow: 0 12px 28px rgba(10,132,255,0.08);
+      transform: translateY(-3px);
+      border-color: #bcd9ff;
+      box-shadow: 0 20px 38px rgba(10,132,255,0.12);
     }
     .launch-kicker {
       font-size: 12px;
@@ -604,6 +621,52 @@ HTML = """
     }
     .section-head h2 { margin-bottom: 4px; }
     .theme-toggle { min-height: 36px; padding: 8px 12px; }
+    .launch-card::after {
+      content: '↗';
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(255,255,255,0.8);
+      color: #174a89;
+      font-weight: 700;
+      box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+    }
+    .card-knowledge { background: linear-gradient(180deg, #fdfefe, #eef8ff 100%); }
+    .card-maps { background: linear-gradient(180deg, #fbfffd, #eefbf4 100%); }
+    .card-library { background: linear-gradient(180deg, #fffefd, #fff6eb 100%); }
+    .card-help { background: linear-gradient(180deg, #fffefe, #f7f0ff 100%); }
+    .feature { position: relative; overflow: hidden; }
+    .feature::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at top right, rgba(255,255,255,0.45), transparent 26%);
+    }
+    .feature > * { position: relative; z-index: 1; }
+    .feature-ai { background: linear-gradient(180deg, rgba(242,248,255,0.9), rgba(255,255,255,0.82)); }
+    .feature-library { background: linear-gradient(180deg, rgba(250,252,255,0.92), rgba(255,255,255,0.84)); }
+    .feature-search { background: linear-gradient(180deg, rgba(245,251,255,0.9), rgba(255,255,255,0.84)); }
+    .feature-emergency { background: linear-gradient(180deg, rgba(255,249,240,0.92), rgba(255,255,255,0.85)); }
+    .feature-translate { background: linear-gradient(180deg, rgba(242,255,251,0.92), rgba(255,255,255,0.85)); }
+    .suggestion-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+    .prompt-chip { background: rgba(255,255,255,0.82); }
+    .soft-note {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(219, 226, 239, 0.9);
+      background: rgba(255,255,255,0.72);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
 
     [data-theme="dark"] {
       --bg: #08111f;
@@ -635,7 +698,18 @@ HTML = """
       color: #ecf3ff;
       box-shadow: none;
     }
-    [data-theme="dark"] .launch-card:hover { box-shadow: 0 12px 28px rgba(0,0,0,0.3); }
+    [data-theme="dark"] .launch-card:hover { box-shadow: 0 18px 34px rgba(0,0,0,0.34); }
+    [data-theme="dark"] .card-knowledge,
+    [data-theme="dark"] .card-maps,
+    [data-theme="dark"] .card-library,
+    [data-theme="dark"] .card-help,
+    [data-theme="dark"] .feature-ai,
+    [data-theme="dark"] .feature-library,
+    [data-theme="dark"] .feature-search,
+    [data-theme="dark"] .feature-emergency,
+    [data-theme="dark"] .feature-translate { background: #0f1a2d; }
+    [data-theme="dark"] .launch-card::after,
+    [data-theme="dark"] .soft-note { background: #13233c; border-color: #263754; color: #d9e8ff; }
     [data-theme="dark"] .input,
     [data-theme="dark"] .select,
     [data-theme="dark"] .textarea,
@@ -677,10 +751,10 @@ HTML = """
     <section class="reveal">
       <div class="hero-grid">
         <div class="hero-card">
-          <div class="eyebrow">Offline appliance dashboard</div>
+          <div class="eyebrow">Offline-first command center</div>
           <div class="hero-top">
             <h1 class="hero-title">Offgrid Intel Kit</h1>
-            <p class="hero-copy">A calmer control surface for local knowledge, maps, translation, and AI — designed to feel like one offline appliance instead of a pile of tools.</p>
+            <p class="hero-copy">A bright, low-stress home screen for knowledge, maps, translation, and local AI — built so anyone can walk up and know where to begin.</p>
             <div class="meta-row">
               <div class="meta-pill"><strong>{{ total }}</strong> knowledge packs ready</div>
               <div class="meta-pill"><strong>{{ total_size }}</strong> local content</div>
@@ -731,27 +805,27 @@ HTML = """
     <section class="glass section reveal">
       <div class="section-head">
         <div>
-          <h2>Launchpad</h2>
-          <p class="subcopy">Fast paths into the parts people actually use, plus one place to refresh the library.</p>
+          <h2>Start here</h2>
+          <p class="subcopy">The four things people reach for first, made obvious and fast.</p>
         </div>
       </div>
       <div class="launch-grid">
-        <a class="launch-card" href="http://{{ host_ip }}:8080" target="_blank">
+        <a class="launch-card card-knowledge" href="http://{{ host_ip }}:8080" target="_blank">
           <div class="launch-kicker">Read</div>
           <div class="launch-title">Knowledge</div>
           <div class="launch-copy">Open the offline reader with the current ZIM stack.</div>
         </a>
-        <a class="launch-card" href="http://{{ host_ip }}:8091">
+        <a class="launch-card card-maps" href="http://{{ host_ip }}:8091">
           <div class="launch-kicker">Navigate</div>
           <div class="launch-title">Maps</div>
           <div class="launch-copy">Browse local PMTiles datasets and search towns offline.</div>
         </a>
-        <a class="launch-card" href="/ebooks">
+        <a class="launch-card card-library" href="/ebooks">
           <div class="launch-kicker">Browse</div>
           <div class="launch-title">Library</div>
           <div class="launch-copy">Find PDFs and ebooks living alongside the knowledge kit.</div>
         </a>
-        <a class="launch-card" href="/help">
+        <a class="launch-card card-help" href="/help">
           <div class="launch-kicker">Support</div>
           <div class="launch-title">Help & recovery</div>
           <div class="launch-copy">Get URLs, service checks, and install troubleshooting fast.</div>
@@ -759,12 +833,12 @@ HTML = """
       </div>
       <div class="toolbar" style="margin-top:4px; grid-template-columns: 1fr auto;">
         <input id="extraDir" class="input" type="text" placeholder="Optional extra folder to include in scans" value="{{ scan_dir }}" />
-        <button class="btn btn-accent" onclick="rescan()">Rescan + Sync All ZIMs</button>
+        <button class="btn btn-accent" onclick="rescan()">Refresh library</button>
       </div>
       <p class="subcopy">Scanning roots: {{ roots|join(' • ') }}</p>
     </section>
 
-    <section class="glass section reveal">
+    <section class="glass section reveal feature feature-ai">
       <div style="display:flex; justify-content:space-between; gap:16px; align-items:flex-start; flex-wrap:wrap;">
         <div>
           <h2>Ask the assistant</h2>
@@ -781,6 +855,12 @@ HTML = """
           <span id="miniAiModelStatus" class="muted">{{ ai_status.detail }}</span>
         </div>
         <textarea id="miniAiPrompt" class="textarea" style="min-height:110px; margin-top:14px;" placeholder="Ask a question in plain language..."></textarea>
+        <div class="suggestion-row">
+          <button class="chip prompt-chip" type="button" onclick='fillMiniAiPrompt("How do I purify water safely?")'>Purify water</button>
+          <button class="chip prompt-chip" type="button" onclick='fillMiniAiPrompt("What are the first steps for basic first aid?")'>First aid</button>
+          <button class="chip prompt-chip" type="button" onclick='fillMiniAiPrompt("Give me a simple checklist for shelter tonight.")'>Shelter checklist</button>
+        </div>
+        <div class="soft-note">Ask short, direct questions for the fastest answers.</div>
         <div style="display:flex; justify-content:flex-end; margin-top:12px;">
           <button id="miniAiSend" class="btn btn-accent" type="button">Send</button>
         </div>
@@ -789,7 +869,7 @@ HTML = """
 
     <section class="layout">
       <div>
-        <section class="glass section reveal">
+        <section class="glass section reveal feature feature-library">
           <div class="section-head"><div><h2>Library</h2><p class="subcopy">Open the local knowledge packs without worrying about filenames or folders.</p></div></div>
           <div class="toolbar">
             <input id="q" class="input" type="text" placeholder="Filter by title, category, or path… (press / to focus)" oninput="quickFilter()" />
@@ -837,7 +917,7 @@ HTML = """
           </div>
         </section>
 
-        <section id="wiki-search" class="glass section reveal">
+        <section id="wiki-search" class="glass section reveal feature feature-search">
           <h2>Find in the library</h2>
           <p class="subcopy">Search your offline collection and pull out the useful part quickly.</p>
           <div class="toolbar" style="margin-top:16px; grid-template-columns: 1fr auto;">
@@ -864,7 +944,7 @@ HTML = """
       </div>
 
       <aside class="side-stack">
-        <section class="glass section reveal">
+        <section class="glass section reveal feature feature-emergency">
           <h2>Emergency shortcuts</h2>
           <div class="quick-grid" style="margin-top:16px;">
             <a class="btn btn-soft" href="/go/water" target="_blank">Water Purification</a>
@@ -875,7 +955,7 @@ HTML = """
           <p id="quickActionStatus" class="subcopy">{{ qa_status or 'One-tap links for the things people need most under stress.' }}</p>
         </section>
 
-        <section id="translator" class="glass section reveal">
+        <section id="translator" class="glass section reveal feature feature-translate">
           <h2>Translator</h2>
           <p class="subcopy">Clean offline translation for emergency and everyday use.</p>
           <form id="translateForm" method="post" action="/translate_form" style="margin-top:16px;">

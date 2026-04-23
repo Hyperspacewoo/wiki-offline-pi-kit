@@ -38,6 +38,7 @@ DEFAULT_CONFIG = {
 }
 
 DATASET_VIEW_HINTS = {
+    "usa.pmtiles": {"center": [-98.58, 39.83], "zoom": 4},
     "nyc.pmtiles": {"center": [-74.0, 40.72], "zoom": 9},
 }
 
@@ -64,7 +65,7 @@ INDEX_HTML = """<!doctype html>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
       color: var(--text);
-      background: #dfe7f2;
+      background: radial-gradient(circle at top left, rgba(122,211,252,0.35), transparent 24%), linear-gradient(180deg, #e8f0fb 0%, #dfe8f4 100%);
     }
     .panel {
       position: absolute;
@@ -74,7 +75,7 @@ INDEX_HTML = """<!doctype html>
       width: min(420px, calc(100vw - 32px));
       padding: 16px;
       border-radius: 20px;
-      background: var(--panel-bg);
+      background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(248,251,255,0.84));
       border: 1px solid var(--panel-line);
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
@@ -159,7 +160,7 @@ INDEX_HTML = """<!doctype html>
       --accent: #6cb6ff;
       --accent-soft: rgba(108,182,255,0.12);
     }
-    [data-theme="dark"] body { background: #08111f; }
+    [data-theme="dark"] body { background: linear-gradient(180deg, #08111f 0%, #0d1727 100%); }
     [data-theme="dark"] .search input,
     [data-theme="dark"] .search select,
     [data-theme="dark"] .panel-button,
@@ -181,7 +182,8 @@ INDEX_HTML = """<!doctype html>
     <div class="panel-head">
       <div>
         <div id="title" class="title">Offgrid Intel Kit Map</div>
-        <div class="small">Dataset: <span id="pmtilesName"></span></div>
+        <div class="small">Now viewing: <span id="pmtilesName"></span></div>
+        <div id="datasetSummary" class="small subtle"></div>
       </div>
       <div class="traffic"><i class="r"></i><i class="y"></i><i class="g"></i></div>
     </div>
@@ -278,6 +280,13 @@ INDEX_HTML = """<!doctype html>
       applyTheme(next);
     }
 
+    function labelDataset(name) {
+      const simple = (name || '').replace(/\.pmtiles$/i, '');
+      if (simple.toLowerCase() === 'usa') return 'United States';
+      if (simple.toLowerCase() === 'nyc') return 'New York City';
+      return simple.replace(/[-_]+/g, ' ').replace(/\w/g, c => c.toUpperCase());
+    }
+
     function resetView() {
       if (!map) return;
       map.flyTo({ center: initialView.center, zoom: initialView.zoom });
@@ -291,12 +300,19 @@ INDEX_HTML = """<!doctype html>
         zoom: cfg.zoom || 4
       };
       document.getElementById('title').textContent = cfg.title || 'Offgrid Intel Kit Map';
-      document.getElementById('pmtilesName').textContent = cfg.pmtiles;
+      document.getElementById('pmtilesName').textContent = labelDataset(cfg.pmtiles);
 
       try {
         const datasets = await fetch('/datasets').then(r => r.json());
         const sel = document.getElementById('datasetSelect');
-        sel.innerHTML = datasets.map(d => `<option value="${d}" ${d===cfg.pmtiles?'selected':''}>Map: ${d}</option>`).join('');
+        sel.innerHTML = datasets.map(d => `<option value="${d}" ${d===cfg.pmtiles?'selected':''}>${labelDataset(d)}</option>`).join('');
+        const summary = document.getElementById('datasetSummary');
+        if (summary) {
+          const hasUsa = datasets.includes('usa.pmtiles');
+          const hasNyc = datasets.includes('nyc.pmtiles');
+          if (hasUsa && hasNyc) summary.textContent = 'National coverage plus detailed New York City tiles are ready.';
+          else summary.textContent = `${datasets.length} map pack${datasets.length === 1 ? '' : 's'} ready offline.`;
+        }
         sel.onchange = async () => {
           const name = sel.value;
           await fetch('/set_dataset', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({pmtiles:name})});
