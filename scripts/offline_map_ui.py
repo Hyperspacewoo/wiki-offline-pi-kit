@@ -150,6 +150,24 @@ INDEX_HTML = """<!doctype html>
       font-size: 12px;
       line-height: 1.45;
     }
+    [data-theme="dark"] {
+      --panel-bg: rgba(11,19,34,0.88);
+      --panel-line: #22324b;
+      --panel-shadow: 0 18px 36px rgba(0,0,0,0.28);
+      --text: #ecf3ff;
+      --muted: #9eb1cc;
+      --accent: #6cb6ff;
+      --accent-soft: rgba(108,182,255,0.12);
+    }
+    [data-theme="dark"] body { background: #08111f; }
+    [data-theme="dark"] .search input,
+    [data-theme="dark"] .search select,
+    [data-theme="dark"] .panel-button,
+    [data-theme="dark"] .results,
+    [data-theme="dark"] .hint { background: #0f1a2d; border-color: #22324b; color: #ecf3ff; }
+    [data-theme="dark"] .result:hover { background: #18304f; }
+    [data-theme="dark"] .panel-button.primary { background:#6cb6ff; border-color:#6cb6ff; color:#04101e; }
+    [data-theme="dark"] .town-label { background: rgba(15,26,45,0.94); border-color: #35527a; color: #ecf3ff; }
     .town-label { background: rgba(255,255,255,0.92); border: 1px solid #a7b6cc; border-radius: 8px; padding: 1px 5px; font-size: 11px; color: #1f2937; white-space: nowrap; }
     @media (max-width: 720px) {
       .panel { top: 10px; left: 10px; width: calc(100vw - 20px); padding: 14px; }
@@ -178,6 +196,7 @@ INDEX_HTML = """<!doctype html>
     </div>
     <div class="panel-actions">
       <button class="panel-button primary" type="button" onclick="resetView()">Reset view</button>
+      <button id="themeToggle" class="panel-button" type="button" onclick="toggleTheme()">🌙 Dark</button>
       <a class="panel-button" href="/">Back to dashboard</a>
     </div>
   </div>
@@ -245,12 +264,27 @@ INDEX_HTML = """<!doctype html>
       box.classList.remove('hidden');
     }
 
+    function applyTheme(theme) {
+      const safeTheme = theme === 'dark' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', safeTheme);
+      const toggle = document.getElementById('themeToggle');
+      if (toggle) toggle.textContent = safeTheme === 'dark' ? '☀️ Light' : '🌙 Dark';
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+      const next = current === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('wikiTheme', next);
+      applyTheme(next);
+    }
+
     function resetView() {
       if (!map) return;
       map.flyTo({ center: initialView.center, zoom: initialView.zoom });
     }
 
     async function boot() {
+      applyTheme(localStorage.getItem('wikiTheme') || 'light');
       const cfg = await fetch('/config').then(r => r.json());
       initialView = {
         center: cfg.center || [-98.58, 39.83],

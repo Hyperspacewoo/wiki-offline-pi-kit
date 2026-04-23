@@ -164,7 +164,22 @@ HTML = """
       dst.value = t;
     }
 
+    function applyTheme(theme) {
+      const safeTheme = theme === 'dark' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', safeTheme);
+      const toggle = document.getElementById('themeToggle');
+      if (toggle) toggle.textContent = safeTheme === 'dark' ? '☀️ Light' : '🌙 Dark';
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+      const next = current === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('wikiTheme', next);
+      applyTheme(next);
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
+      applyTheme(localStorage.getItem('wikiTheme') || 'light');
       applyFilters();
       sortRows();
       const filterInput = document.getElementById('q');
@@ -588,6 +603,56 @@ HTML = """
       margin-bottom: 14px;
     }
     .section-head h2 { margin-bottom: 4px; }
+    .theme-toggle { min-height: 36px; padding: 8px 12px; }
+
+    [data-theme="dark"] {
+      --bg: #08111f;
+      --surface: rgba(11, 19, 34, 0.82);
+      --surface-2: #0f1a2d;
+      --line: #22324b;
+      --text: #ecf3ff;
+      --muted: #9eb1cc;
+      --primary: #6cb6ff;
+      --accent: #7dd3fc;
+      --warning: #f7b955;
+      --ok: #40d38a;
+    }
+    [data-theme="dark"] body { background: linear-gradient(180deg, #08111f 0%, #0d1727 100%); }
+    [data-theme="dark"] .glass,
+    [data-theme="dark"] .hero-card,
+    [data-theme="dark"] .system-rail,
+    [data-theme="dark"] .launch-card,
+    [data-theme="dark"] .stat-card,
+    [data-theme="dark"] .panel-box,
+    [data-theme="dark"] .chat-shell,
+    [data-theme="dark"] .hero-note,
+    [data-theme="dark"] .meta-pill,
+    [data-theme="dark"] .system-item,
+    [data-theme="dark"] .results-box,
+    [data-theme="dark"] .pre {
+      background: #0f1a2d;
+      border-color: #22324b;
+      color: #ecf3ff;
+      box-shadow: none;
+    }
+    [data-theme="dark"] .launch-card:hover { box-shadow: 0 12px 28px rgba(0,0,0,0.3); }
+    [data-theme="dark"] .input,
+    [data-theme="dark"] .select,
+    [data-theme="dark"] .textarea,
+    [data-theme="dark"] .btn,
+    [data-theme="dark"] .chip,
+    [data-theme="dark"] th,
+    [data-theme="dark"] tbody tr:hover,
+    [data-theme="dark"] .badge {
+      background: #13233c;
+      border-color: #263754;
+      color: #d9e8ff;
+    }
+    [data-theme="dark"] .btn-accent { background: #6cb6ff; border-color: #6cb6ff; color: #04101e; }
+    [data-theme="dark"] .btn-mint { background: #0f2940; border-color: #234768; color: #bde8ff; }
+    [data-theme="dark"] .chip.active, [data-theme="dark"] .chip:hover { background: #18304f; color: #d9e8ff; border-color: #2d4f76; }
+    [data-theme="dark"] .chat-bubble.assistant { background: #13233c; border-color: #263754; color: #ecf3ff; }
+    [data-theme="dark"] table { background: #0f1a2d; }
 
     details summary { cursor: pointer; font-weight: 600; }
     .reveal, .reveal.show { opacity: 1; transform: none; }
@@ -637,26 +702,26 @@ HTML = """
         <aside class="system-rail glass">
           <div class="system-head">
             <div>
-              <h2 style="margin:0 0 4px 0;">System snapshot</h2>
-              <p class="muted small">What matters right now, at a glance.</p>
+              <h2 style="margin:0 0 4px 0;">Ready to use</h2>
+              <p class="muted small">The essentials, in plain language.</p>
             </div>
-            <div class="status-pill"><span class="dot {{ 'warn' if not ai_status.ok else '' }}"></span>{{ ai_status.label }}</div>
+            <button id="themeToggle" class="btn btn-soft theme-toggle" type="button" onclick="toggleTheme()">🌙 Dark</button>
           </div>
           <div class="system-list">
             <div class="system-item">
-              <label>Library health</label>
-              <strong>{{ loaded_count }} packs loaded into Kiwix</strong>
-              <div class="small muted">{{ health_summary }}</div>
+              <label>Reading library</label>
+              <strong>{{ loaded_count }} knowledge packs are ready to open</strong>
+              <div class="small muted">Choose Knowledge to start browsing offline.</div>
             </div>
             <div class="system-item">
-              <label>Translator</label>
+              <label>Translation</label>
               <strong>{{ translator_status }}</strong>
-              <div class="small muted">{{ translator_offline_warning or 'Offline language tools look ready.' }}</div>
+              <div class="small muted">Useful for emergency phrases or everyday conversation.</div>
             </div>
             <div class="system-item">
-              <label>AI runtime</label>
-              <strong>{{ ai_status.detail }}</strong>
-              <div class="small muted">Current model: {{ ai_model_name }}</div>
+              <label>Assistant</label>
+              <strong>{{ ai_status.label }}</strong>
+              <div class="small muted">Ask questions in plain language when you need help fast.</div>
             </div>
           </div>
         </aside>
@@ -702,8 +767,8 @@ HTML = """
     <section class="glass section reveal">
       <div style="display:flex; justify-content:space-between; gap:16px; align-items:flex-start; flex-wrap:wrap;">
         <div>
-          <h2>Offline AI</h2>
-          <p class="subcopy">Minimal live local chat widget.</p>
+          <h2>Ask the assistant</h2>
+          <p class="subcopy">Type a question naturally. The system answers locally without needing internet.</p>
         </div>
         <div class="status-pill"><span class="dot {{ 'warn' if not ai_status.ok else '' }}"></span><span id="aiStatusLabel">{{ ai_status.label }}</span></div>
       </div>
@@ -713,16 +778,9 @@ HTML = """
         <div id="miniAiOutput" class="chat-output"><div class="chat-bubble assistant">Offline AI ready.</div></div>
         <div id="miniAiSpinner" class="chat-spinner"><span class="spinner-dot"></span><span class="spinner-dot"></span><span class="spinner-dot"></span><span>Thinking locally…</span></div>
         <div style="display:flex; gap:12px; align-items:center; margin-top:14px; flex-wrap:wrap;">
-          <label class="muted" for="miniAiModel">AI Model</label>
-          <select id="miniAiModel" class="select" style="max-width:260px;">
-            {% for m in ai_models %}
-              <option value="{{ m.path }}" {% if m.path == ai_model %}selected{% endif %}>{{ m.name }}</option>
-            {% endfor %}
-          </select>
-          <button id="miniAiSwitch" class="btn btn-soft" type="button">Switch Model</button>
-          <span id="miniAiModelStatus" class="muted">Current: {{ ai_model_name }}</span>
+          <span id="miniAiModelStatus" class="muted">{{ ai_status.detail }}</span>
         </div>
-        <textarea id="miniAiPrompt" class="textarea" style="min-height:110px; margin-top:14px;" placeholder="Ask anything..."></textarea>
+        <textarea id="miniAiPrompt" class="textarea" style="min-height:110px; margin-top:14px;" placeholder="Ask a question in plain language..."></textarea>
         <div style="display:flex; justify-content:flex-end; margin-top:12px;">
           <button id="miniAiSend" class="btn btn-accent" type="button">Send</button>
         </div>
@@ -732,6 +790,7 @@ HTML = """
     <section class="layout">
       <div>
         <section class="glass section reveal">
+          <div class="section-head"><div><h2>Library</h2><p class="subcopy">Open the local knowledge packs without worrying about filenames or folders.</p></div></div>
           <div class="toolbar">
             <input id="q" class="input" type="text" placeholder="Filter by title, category, or path… (press / to focus)" oninput="quickFilter()" />
             <select id="sortMode" class="select" onchange="sortRows()">
@@ -761,8 +820,7 @@ HTML = """
                   <th>Title</th>
                   <th>Category</th>
                   <th>Size</th>
-                  <th>Action</th>
-                  <th>Path</th>
+                  <th>Open</th>
                 </tr>
               </thead>
               <tbody>
@@ -771,13 +829,7 @@ HTML = """
                   <td><div><strong>{{ z.icon }} {{ z.title }}</strong></div><div class="file-name">{{ z.filename }}</div></td>
                   <td><span class="badge">{{ z.category }}</span></td>
                   <td class="muted">{{ z.size }}</td>
-                  <td>
-                    <div class="button-row">
-                      <a class="btn btn-accent" style="min-height:36px;padding:8px 12px;font-size:12px;" href="{{ z.open_url }}" target="_blank">Open</a>
-                      <button class="btn btn-soft" style="min-height:36px;padding:8px 12px;font-size:12px;" onclick='navigator.clipboard.writeText({{ z.open_url|tojson }})'>Copy Link</button>
-                    </div>
-                  </td>
-                  <td class="path">{{ z.path }}</td>
+                  <td><a class="btn btn-accent" style="min-height:36px;padding:8px 12px;font-size:12px;" href="{{ z.open_url }}" target="_blank">Open</a></td>
                 </tr>
                 {% endfor %}
               </tbody>
@@ -786,10 +838,10 @@ HTML = """
         </section>
 
         <section id="wiki-search" class="glass section reveal">
-          <h2>Wiki Search</h2>
-          <p class="subcopy">Search active offline content and parse useful excerpts fast.</p>
+          <h2>Find in the library</h2>
+          <p class="subcopy">Search your offline collection and pull out the useful part quickly.</p>
           <div class="toolbar" style="margin-top:16px; grid-template-columns: 1fr auto;">
-            <input id="wikiQ" class="input" type="text" placeholder="Search active content (e.g. black holes)" />
+            <input id="wikiQ" class="input" type="text" placeholder="Search the offline library (e.g. water purification)" />
             <button class="btn btn-accent" type="button" onclick="wikiSearch()">Search</button>
           </div>
           <div class="split">
@@ -813,14 +865,14 @@ HTML = """
 
       <aside class="side-stack">
         <section class="glass section reveal">
-          <h2>Quick Actions</h2>
+          <h2>Emergency shortcuts</h2>
           <div class="quick-grid" style="margin-top:16px;">
             <a class="btn btn-soft" href="/go/water" target="_blank">Water Purification</a>
             <a class="btn btn-soft" href="/go/firstaid" target="_blank">First Aid</a>
             <a class="btn btn-soft" href="/go/shelter" target="_blank">Shelter</a>
             <a class="btn btn-soft" href="/?qa=translate#translator">Emergency Phrase</a>
           </div>
-          <p id="quickActionStatus" class="subcopy">{{ qa_status or 'Fast access to the most useful field topics.' }}</p>
+          <p id="quickActionStatus" class="subcopy">{{ qa_status or 'One-tap links for the things people need most under stress.' }}</p>
         </section>
 
         <section id="translator" class="glass section reveal">
@@ -851,27 +903,7 @@ HTML = """
         </section>
 
 
-        <section class="glass section reveal">
-          <details>
-            <summary>Advanced System</summary>
-            <p class="subcopy" style="margin-top:12px;">{{ health_summary }}</p>
-            <div class="button-row" style="margin-top:14px;">
-              <button class="btn btn-soft" onclick="runAdminAction('doctor')">Health Check</button>
-              <button class="btn btn-soft" onclick="runAdminAction('verify')">Trust Verify</button>
-              <button class="btn btn-soft" onclick="runAdminAction('backup_usb')">Backup</button>
-              <button class="btn btn-soft" onclick="runAdminAction('sync_usb')">Import USB</button>
-            </div>
-            <pre id="adminOut" class="pre">Ready.</pre>
-          </details>
-        </section>
 
-        <section class="glass section reveal">
-          <h2>CLI Quick Query</h2>
-          <p class="subcopy">Exact terminal commands:</p>
-          <pre class="pre">source ~/wiki/.venv/bin/activate
-wiki-ask "black holes"
-wiki-ask "water purification" --top 5 --open 1 --chars 2500</pre>
-        </section>
       </aside>
     </section>
   </main>
@@ -880,33 +912,20 @@ wiki-ask "water purification" --top 5 --open 1 --chars 2500</pre>
 """
 
 HELP_HTML = """
-<!doctype html><html><head><meta charset='utf-8'><title>Offline Help</title><style>body{font-family:Inter,Arial,sans-serif;max-width:900px;margin:30px auto;padding:0 16px;color:#eaf0ff;background:#0b1020}h1,h2{color:#9ec0ff}code,pre{background:#13213f;padding:2px 6px;border-radius:6px}a{color:#7bb2ff}</style></head><body>
-<h1>Offgrid Intel Kit – Help</h1>
-<p>This system is designed to run without internet once installed.</p>
-<h2>URLs</h2>
-<ul><li>Dashboard: <code>:8090</code></li><li>Kiwix reader: <code>:8080</code></li><li>Offline maps: <code>:8091</code></li><li>Offline AI (llama.cpp): <code>:8092</code></li></ul>
-<h2>Translator</h2>
-<ul><li>Built for offline use with local translation engine(s)</li><li>If language packs are missing, install Argos Translate + package files and restart <code>zim-ui.service</code></li></ul>
-<h2>USB Distribution</h2>
-<ul><li>Run <code>START_LINUX.sh</code> (Linux), <code>START_WINDOWS.bat</code> (Windows), or <code>START_MAC.command</code> (macOS)</li><li>Use <code>scripts/verify_checksums.sh</code> before install</li></ul>
-<h2>Troubleshooting</h2>
-<ul><li>Check service status: <code>wiki-status</code>, <code>zim-ui-status</code>, <code>map-ui-status</code>, <code>llama-status</code></li><li>Port check: <code>ss -ltnp | grep -E ':8080|:8090|:8091|:8092'</code></li></ul>
+<!doctype html><html><head><meta charset='utf-8'><title>Offline Help</title><style>:root{--bg:#f4f6fb;--card:#fff;--line:#dbe2ef;--text:#1f2937;--muted:#6b7280;--accent:#0a84ff}[data-theme="dark"]{--bg:#08111f;--card:#0f1a2d;--line:#22324b;--text:#ecf3ff;--muted:#9eb1cc;--accent:#7dd3fc}body{font-family:Inter,Arial,sans-serif;max-width:960px;margin:30px auto;padding:0 16px;color:var(--text);background:var(--bg)}.card{border:1px solid var(--line);background:var(--card);border-radius:16px;padding:16px;margin-bottom:14px}.muted{color:var(--muted)}code,pre{background:rgba(10,132,255,.08);padding:2px 6px;border-radius:6px}a{color:var(--accent)}.top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}.btn{border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--card);color:var(--text);cursor:pointer;text-decoration:none}</style><script>function applyTheme(t){document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');const b=document.getElementById('themeToggle');if(b)b.textContent=t==='dark'?'☀️ Light':'🌙 Dark'}function toggleTheme(){const c=document.documentElement.getAttribute('data-theme')==='dark'?'dark':'light';const n=c==='dark'?'light':'dark';localStorage.setItem('wikiTheme',n);applyTheme(n)}document.addEventListener('DOMContentLoaded',()=>applyTheme(localStorage.getItem('wikiTheme')||'light'));</script></head><body>
+<div class='top'><div><h1>Help</h1><p class='muted'>Simple answers for common tasks.</p></div><div><button id='themeToggle' class='btn' onclick='toggleTheme()'>🌙 Dark</button> <a class='btn' href='/'>Back</a></div></div>
+<div class='card'><h2>Where do I start?</h2><p class='muted'>Use the dashboard for most things. Knowledge opens the reader, Maps opens offline maps, and Translate helps with emergency phrases and everyday language.</p></div>
+<div class='card'><h2>Main addresses</h2><ul><li>Dashboard: <code>:8090</code></li><li>Knowledge: <code>:8080</code></li><li>Maps: <code>:8091</code></li><li>Assistant: <code>:8092</code></li></ul></div>
+<div class='card'><h2>If something seems missing</h2><ul><li>Try the dashboard first and refresh once.</li><li>If translation is blank, the language pack may not be installed yet.</li><li>If a page will not open, restarting the kit usually fixes it.</li></ul></div>
 </body></html>
 """
 
 EBOOKS_HTML = """
-<!doctype html><html><head><meta charset='utf-8'><title>Offline Ebooks</title>
-<style>
-body{font-family:Inter,Arial,sans-serif;max-width:1100px;margin:24px auto;padding:0 16px;color:#eaf0ff;background:#0b1020}
-h1{color:#9ec0ff} .muted{color:#a9b5d1}
-.card{border:1px solid #2a3b63;background:#121a2b;border-radius:12px;padding:12px;margin-bottom:12px}
-a{color:#7bb2ff}
-.row{padding:8px;border-bottom:1px solid #27375f}
-.path{font-size:12px;color:#9eb3df}
-</style></head><body>
-<h1>Offline Ebooks</h1>
+<!doctype html><html><head><meta charset='utf-8'><title>Offline Library</title>
+<style>:root{--bg:#f4f6fb;--card:#fff;--line:#dbe2ef;--text:#1f2937;--muted:#6b7280;--accent:#0a84ff}[data-theme="dark"]{--bg:#08111f;--card:#0f1a2d;--line:#22324b;--text:#ecf3ff;--muted:#9eb1cc;--accent:#7dd3fc}body{font-family:Inter,Arial,sans-serif;max-width:1100px;margin:24px auto;padding:0 16px;color:var(--text);background:var(--bg)}h1{margin-bottom:6px}.muted{color:var(--muted)}.card{border:1px solid var(--line);background:var(--card);border-radius:16px;padding:16px;margin-bottom:12px}a{color:var(--accent)}.row{padding:10px 0;border-bottom:1px solid var(--line)}.path{font-size:12px;color:var(--muted)}.top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}.btn{border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--card);color:var(--text);cursor:pointer;text-decoration:none}</style><script>function applyTheme(t){document.documentElement.setAttribute('data-theme',t==='dark'?'dark':'light');const b=document.getElementById('themeToggle');if(b)b.textContent=t==='dark'?'☀️ Light':'🌙 Dark'}function toggleTheme(){const c=document.documentElement.getAttribute('data-theme')==='dark'?'dark':'light';const n=c==='dark'?'light':'dark';localStorage.setItem('wikiTheme',n);applyTheme(n)}document.addEventListener('DOMContentLoaded',()=>applyTheme(localStorage.getItem('wikiTheme')||'light'));</script></head><body>
+<div class='top'><div><h1>Library</h1><div class='muted'>Books and documents stored with the offline kit.</div></div><div><button id='themeToggle' class='btn' onclick='toggleTheme()'>🌙 Dark</button> <a class='btn' href='/'>Back</a></div></div>
 <div class='card'>
-  <div class='muted'>Drop ebooks into any of these folders:</div>
+  <div class='muted'>Add ebooks to any of these folders:</div>
   <ul>__ROOTS_HTML__</ul>
 </div>
 <div class='card'>
