@@ -26,7 +26,7 @@ download_if_missing() {
     return 0
   fi
   echo "Downloading $(basename "$out")"
-  curl -L --fail -o "$out" "$url"
+  curl -L --fail --retry 3 --retry-delay 2 --continue-at - -o "$out" "$url"
 }
 
 download_if_missing "$PYTHON_URL" "$PYTHON_OUT"

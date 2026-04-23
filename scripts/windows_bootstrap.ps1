@@ -6,6 +6,7 @@ $ErrorActionPreference = "Stop"
 if ([string]::IsNullOrWhiteSpace($KitDir)) {
   $KitDir = Split-Path -Parent $MyInvocation.MyCommand.Path | Split-Path -Parent
 }
+$KitDir = (Resolve-Path -LiteralPath $KitDir).Path
 
 Write-Host "[Offgrid Wiki] Kit dir: $KitDir"
 $installers = Join-Path $KitDir "installers"
@@ -27,6 +28,19 @@ function Find-Installer($patterns) {
   return $null
 }
 
+function Start-CheckedProcess {
+  param(
+    [Parameter(Mandatory=$true)][string]$FilePath,
+    [Parameter(Mandatory=$false)][string[]]$ArgumentList = @(),
+    [Parameter(Mandatory=$true)][string]$Label
+  )
+
+  $proc = Start-Process -FilePath $FilePath -ArgumentList $ArgumentList -Wait -PassThru
+  if ($proc.ExitCode -ne 0) {
+    throw "$Label failed with exit code $($proc.ExitCode)"
+  }
+}
+
 function Get-WSLExe() {
   $cmd = Get-Command wsl.exe -ErrorAction SilentlyContinue
   if ($null -ne $cmd) {
@@ -39,13 +53,35 @@ function Get-WSLExe() {
   return $null
 }
 
+function Get-WSLDistros($WslExe) {
+  return @(& $WslExe -l -q 2>$null | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+}
+
+function Select-InstallDistro($DistroList) {
+  if ($null -eq $DistroList -or $DistroList.Count -eq 0) {
+    return $null
+  }
+
+  $preferred = $DistroList | Where-Object { $_ -match '^(Ubuntu|Debian|Kali|openSUSE|SUSE|Arch|Alpine)(\b|[- ])' }
+  if ($preferred.Count -gt 0) {
+    return $preferred[0]
+  }
+
+  $nonInfra = $DistroList | Where-Object { $_ -notmatch '^(docker-desktop|docker-desktop-data)$' }
+  if ($nonInfra.Count -gt 0) {
+    return $nonInfra[0]
+  }
+
+  return $DistroList[0]
+}
+
 if (-not (Test-Cmd "python")) {
   $pyInstaller = Find-Installer @("python*.exe")
   if ($null -eq $pyInstaller) {
     Write-Warning "Python not found and no python*.exe in $installers"
   } else {
     Write-Host "Installing Python from $($pyInstaller.Name)..."
-    Start-Process -FilePath $pyInstaller.FullName -ArgumentList "/quiet InstallAllUsers=1 PrependPath=1 Include_test=0" -Wait
+    Start-CheckedProcess -FilePath $pyInstaller.FullName -ArgumentList @( "/quiet", "InstallAllUsers=1", "PrependPath=1", "Include_test=0" ) -Label "Python installer"
   }
 } else {
   Write-Host "Python already available"
@@ -60,7 +96,7 @@ if ($null -eq $wslExe) {
   }
 
   Write-Host "Installing WSL from $($wslInstaller.Name)..."
-  Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$($wslInstaller.FullName)`" /passive /norestart" -Wait
+  Start-CheckedProcess -FilePath "msiexec.exe" -ArgumentList @( "/i", $wslInstaller.FullName, "/passive", "/norestart" ) -Label "WSL installer"
   $wslExe = Get-WSLExe
 }
 
@@ -69,14 +105,14 @@ if ($null -eq $wslExe) {
   exit 1
 }
 
-$distroList = @(& $wslExe -l -q 2>$null | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+$distroList = Get-WSLDistros $wslExe
 if ($distroList.Count -eq 0) {
   $ubuntuBundle = Find-Installer @("Ubuntu*.AppxBundle", "Ubuntu*.appxbundle", "Ubuntu*.msixbundle", "Ubuntu*.appx")
   if ($null -ne $ubuntuBundle) {
     Write-Host "Installing Ubuntu WSL bundle from $($ubuntuBundle.Name)..."
     Add-AppxPackage -Path $ubuntuBundle.FullName
     Start-Sleep -Seconds 3
-    $distroList = @(& $wslExe -l -q 2>$null | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+    $distroList = Get-WSLDistros $wslExe
   }
 }
 
@@ -85,7 +121,12 @@ if ($distroList.Count -eq 0) {
   exit 1
 }
 
-$defaultDistro = $distroList[0]
+$targetDistro = Select-InstallDistro $distroList
+if ([string]::IsNullOrWhiteSpace($targetDistro)) {
+  Write-Warning "Could not determine which WSL distro to use."
+  exit 1
+}
+
 $wslPath = (& $wslExe wslpath -a $KitDir 2>$null | Select-Object -First 1)
 if ([string]::IsNullOrWhiteSpace($wslPath)) {
   $drive = $KitDir.Substring(0,1).ToLower()
@@ -94,8 +135,8 @@ if ([string]::IsNullOrWhiteSpace($wslPath)) {
 }
 $wslPath = $wslPath.Trim()
 
-Write-Host "Running Linux installer in WSL distro: $defaultDistro"
-& $wslExe -d $defaultDistro -e bash -lc "cd '$wslPath' && ./INSTALL_OFFLINE_KNOWLEDGE.sh"
+Write-Host "Running Linux installer in WSL distro: $targetDistro"
+& $wslExe -d $targetDistro -e bash -lc "cd '$wslPath' && ./INSTALL_OFFLINE_KNOWLEDGE.sh"
 if ($LASTEXITCODE -ne 0) {
   throw "WSL installer failed"
 }

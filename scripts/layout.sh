@@ -8,13 +8,23 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEFAULT_KIT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-# Use SUDO_USER if running via sudo to avoid root-home drift
-if [[ -n "${SUDO_USER:-}" && "${RUN_USER:-}" == "root" ]]; then
+# Prefer the original invoking user when running under sudo so runtime data and
+# services land in the human's home directory instead of /root by accident.
+if [[ -n "${SUDO_USER:-}" && "$(id -u)" -eq 0 && -z "${RUN_USER:-}" ]]; then
   export RUN_USER="$SUDO_USER"
-  export RUN_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
 else
   export RUN_USER="${RUN_USER:-$(id -un)}"
-  export RUN_HOME="${RUN_HOME:-$HOME}"
+fi
+
+if [[ -n "${RUN_HOME:-}" ]]; then
+  export RUN_HOME
+else
+  passwd_home="$(getent passwd "$RUN_USER" | cut -d: -f6 || true)"
+  if [[ -n "$passwd_home" ]]; then
+    export RUN_HOME="$passwd_home"
+  else
+    export RUN_HOME="$HOME"
+  fi
 fi
 export WIKI_KIT_ROOT="${WIKI_KIT_ROOT:-$DEFAULT_KIT_ROOT}"
 export WIKI_RUNTIME_ROOT="${WIKI_RUNTIME_ROOT:-${RUN_HOME}/wiki}"

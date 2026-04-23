@@ -15,6 +15,9 @@ fi
 
 echo "[2/6] Creating runtime folders..."
 ensure_wiki_layout
+if [[ "$(id -u)" -eq 0 && "${RUN_USER}" != "root" ]]; then
+  chown -R "${RUN_USER}:${RUN_USER}" "${WIKI_RUNTIME_ROOT}"
+fi
 
 echo "[3/6] Creating Python venv + runtime dependencies..."
 "${WIKI_KIT_ROOT}/scripts/install_python_runtime.sh"
@@ -27,10 +30,12 @@ chmod +x "${WIKI_KIT_ROOT}"/scripts/*.sh "${WIKI_KIT_ROOT}"/scripts/*.py || true
 write_layout_env_file "${WIKI_RUNTIME_ROOT}/layout.env"
 sudo install -m 0644 "${WIKI_RUNTIME_ROOT}/layout.env" /etc/default/wiki-offline-kit
 
-echo "[6/6] Adding helper aliases to ~/.bashrc (if missing)..."
-if ! grep -q "alias wiki-ask=" "$HOME/.bashrc"; then
-  cat >> "$HOME/.bashrc" <<'EOF'
-alias wiki-ask='source ~/wiki/.venv/bin/activate && python ${WIKI_KIT_ROOT:-$HOME/offline-knowledge/wiki-offline-pi-kit}/scripts/wikiask.py'
+BASHRC_PATH="${RUN_HOME}/.bashrc"
+echo "[6/6] Adding helper aliases to ${BASHRC_PATH} (if missing)..."
+touch "$BASHRC_PATH"
+if ! grep -q "alias wiki-ask=" "$BASHRC_PATH"; then
+  cat >> "$BASHRC_PATH" <<EOF
+alias wiki-ask='source "${WIKI_VENV}/bin/activate" && python "${WIKI_KIT_ROOT}/scripts/wikiask.py"'
 alias wiki-start='sudo systemctl start kiwix.service'
 alias wiki-stop='sudo systemctl stop kiwix.service'
 alias wiki-status='systemctl status kiwix.service --no-pager && echo && journalctl -u kiwix.service -n 20 --no-pager'
@@ -39,11 +44,14 @@ alias map-ui-status='systemctl status offline-map-ui.service --no-pager && echo 
 alias llama-status='systemctl status llama-server.service --no-pager && echo && journalctl -u llama-server.service -n 20 --no-pager'
 alias llama-start='sudo systemctl start llama-server.service'
 alias llama-stop='sudo systemctl stop llama-server.service'
-alias map-download='bash ${WIKI_KIT_ROOT:-$HOME/offline-knowledge/wiki-offline-pi-kit}/scripts/download_osm_pmtiles.sh'
-alias map-places='bash ${WIKI_KIT_ROOT:-$HOME/offline-knowledge/wiki-offline-pi-kit}/scripts/setup_offline_place_index.sh'
+alias map-download='bash "${WIKI_KIT_ROOT}/scripts/download_osm_pmtiles.sh"'
+alias map-places='bash "${WIKI_KIT_ROOT}/scripts/setup_offline_place_index.sh"'
 EOF
+fi
+if [[ "$(id -u)" -eq 0 && "${RUN_USER}" != "root" ]]; then
+  chown "${RUN_USER}:${RUN_USER}" "$BASHRC_PATH"
 fi
 
 echo "Done. Runtime root: ${WIKI_RUNTIME_ROOT}"
 echo "Bundle root:  ${WIKI_KIT_ROOT}"
-echo "Open a new terminal or run: source ~/.bashrc"
+echo "Open a new terminal or run: source ${BASHRC_PATH}"
