@@ -34,11 +34,13 @@ For **blank-machine / no-network installs**, populate `installers/` and run:
 
 ```bash
 ./scripts/fetch_apt_bundle.sh
+./scripts/fetch_windows_installers.sh
 ./scripts/fetch_bundle_artifacts.sh
 ./scripts/verify_offline_bundle.sh
 ```
 
 Add `--translator` when you also want the heavier offline translation wheel bundle.
+On Windows, the kit can also use bundled Python + WSL + Ubuntu installers when present.
 
 See `installers/README.md` for the exact bundle layout.
 

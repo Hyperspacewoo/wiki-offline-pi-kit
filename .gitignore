@@ -13,6 +13,10 @@ models/local-qwen/
 /installers/maps/
 /installers/python-wheels/
 /installers/*.exe
+/installers/*.msi
+/installers/*.AppxBundle
+/installers/*.appxbundle
+/installers/*.msixbundle
 
 # Python
 __pycache__/

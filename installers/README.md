@@ -52,14 +52,21 @@ Native Windows is still a bootstrap path into WSL.
 For Windows convenience, add:
 
 - `python*.exe`
+- `wsl*.msi`
+- `Ubuntu*.*` (for example `Ubuntu2204-221101.AppxBundle`)
 
-You still need WSL + Ubuntu available on the target machine to run the Linux services.
+Seed them with:
+
+- `./scripts/fetch_windows_installers.sh`
+
+The launcher can use these bundled installers first, but a newly added Ubuntu distro may still need one first-run launch on Windows before the Linux installer can proceed.
 
 ## Seed most bundle artifacts automatically
 
 If you are on a connected Linux machine, you can fetch most non-apt artifacts with:
 
 ```bash
+./scripts/fetch_windows_installers.sh
 ./scripts/fetch_bundle_artifacts.sh [/path/to/local-map.pmtiles] [/path/to/translate-en_es.argosmodel]
 ./scripts/fetch_bundle_artifacts.sh --translator [/path/to/local-map.pmtiles] [/path/to/translate-en_es.argosmodel]
 ```

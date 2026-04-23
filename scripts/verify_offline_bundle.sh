@@ -86,6 +86,8 @@ check_glob_optional "$PYTHON_WHEELHOUSE" 'argostranslate*.whl' "translator Pytho
 check_glob_optional "$ARGOS_MODELS_DIR" '*.argosmodel' "bundled Argos translator model(s)"
 
 check_glob_optional "$INSTALLERS_DIR" 'python*.exe' "Windows Python bootstrap installer"
+check_glob_optional "$INSTALLERS_DIR" 'wsl*.msi' "Windows WSL installer"
+check_glob_optional "$INSTALLERS_DIR" 'Ubuntu*.*' "Windows Ubuntu WSL bundle"
 
 echo
 
@@ -96,6 +98,7 @@ else
   warn "without installers/apt/*.deb, blank Ubuntu machines still need internet apt access"
 fi
 warn "offline translation is optional in the current installer flow, but requires translator wheels + .argosmodel files if you want it fully offline"
+warn "Windows remains a bootstrap path into WSL; the bundled WSL/Ubuntu installers reduce setup friction, but first-run distro initialization may still require one launch on Windows"
 
 if [[ "$fails" -gt 0 ]]; then
   echo
