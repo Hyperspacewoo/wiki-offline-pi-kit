@@ -552,6 +552,28 @@ HTML = """
       font-size: 13px;
       line-height: 1.5;
     }
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .trust-card {
+      min-height: 78px;
+      border: 1px solid rgba(219,226,239,0.92);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.78);
+      padding: 12px;
+      color: #526076;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .trust-card strong {
+      display: block;
+      color: var(--text);
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
     .system-rail {
       display: grid;
       gap: 12px;
@@ -586,7 +608,7 @@ HTML = """
     .system-item strong { display:block; font-size: 14px; }
     .launch-grid {
       display:grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
       gap: 14px;
       margin-bottom: 18px;
     }
@@ -644,6 +666,24 @@ HTML = """
     .card-maps { background: linear-gradient(180deg, #fbfffd, #eefbf4 100%); }
     .card-library { background: linear-gradient(180deg, #fffefd, #fff6eb 100%); }
     .card-help { background: linear-gradient(180deg, #fffefe, #f7f0ff 100%); }
+    .scenario-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin: 14px 0 18px;
+    }
+    .scenario-card {
+      border: 1px solid rgba(219,226,239,0.96);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.86);
+      padding: 13px 14px;
+      min-height: 96px;
+      box-shadow: 0 10px 24px rgba(30, 41, 59, 0.06);
+      transition: transform .16s ease, border-color .16s ease;
+    }
+    .scenario-card:hover { transform: translateY(-2px); border-color: #bcd9ff; }
+    .scenario-card strong { display:block; margin-bottom:6px; }
+    .scenario-card span { color: var(--muted); font-size: 13px; line-height: 1.4; }
     .feature { position: relative; overflow: hidden; }
     .feature::before {
       content: '';
@@ -694,6 +734,8 @@ HTML = """
     [data-theme="dark"] .hero-note,
     [data-theme="dark"] .meta-pill,
     [data-theme="dark"] .system-item,
+    [data-theme="dark"] .trust-card,
+    [data-theme="dark"] .scenario-card,
     [data-theme="dark"] .results-box,
     [data-theme="dark"] .pre {
       background: #0f1a2d;
@@ -736,7 +778,7 @@ HTML = """
 
     @media (max-width: 1100px) {
       .hero-grid, .layout, .split { grid-template-columns: 1fr; }
-      .launch-grid, .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .launch-grid, .stats-grid, .trust-strip, .scenario-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .toolbar { grid-template-columns: 1fr; }
     }
     @media (max-width: 720px) {
@@ -744,7 +786,7 @@ HTML = """
       .section { padding: 14px; }
       .hero-card { padding: 18px; }
       .hero-title { font-size: 30px; }
-      .launch-grid, .stats-grid { grid-template-columns: 1fr; }
+      .launch-grid, .stats-grid, .trust-strip, .scenario-grid { grid-template-columns: 1fr; }
       .translator-row { grid-template-columns: 1fr; }
     }
   </style>
@@ -757,7 +799,7 @@ HTML = """
           <div class="eyebrow">Offline-first command center</div>
           <div class="hero-top">
             <h1 class="hero-title">Offgrid Kit</h1>
-            <p class="hero-copy">A bright, low-stress home screen for knowledge, maps, translation, and local AI — built so anyone can walk up and know where to begin.</p>
+            <p class="hero-copy">A ready-to-use offline drive for knowledge, maps, translation, and local AI. Built for the person who just needs the answer, not a server manual.</p>
             <div class="meta-row">
               <div class="meta-pill"><strong>{{ total }}</strong> knowledge packs ready</div>
               <div class="meta-pill"><strong>{{ total_size }}</strong> local content</div>
@@ -773,6 +815,12 @@ HTML = """
             <div class="hero-note">
               {{ translator_status }}
               {% if sync_msg %}<br><strong>Latest sync:</strong> {{ sync_msg }}{% endif %}
+            </div>
+            <div class="trust-strip" aria-label="Product promises">
+              <div class="trust-card"><strong>No account</strong>Runs locally after setup with no cloud login.</div>
+              <div class="trust-card"><strong>No Docker required</strong>Designed for direct USB launchers and bundled services.</div>
+              <div class="trust-card"><strong>Manual updates</strong>Checks only when asked and preserves user content.</div>
+              <div class="trust-card"><strong>Paper backup</strong>Printable field cards for power outages and handoff.</div>
             </div>
           </div>
         </div>
@@ -812,6 +860,12 @@ HTML = """
           <h2>Start here</h2>
           <p class="subcopy">The four things people reach for first, made obvious and fast.</p>
         </div>
+      </div>
+      <div class="scenario-grid" aria-label="Common situations">
+        <a class="scenario-card" href="/field-cards" target="_blank"><strong>Power is out</strong><span>Print or open quick cards before batteries matter.</span></a>
+        <a class="scenario-card" href="/go/firstaid" target="_blank"><strong>Someone is hurt</strong><span>Jump straight into first-aid references.</span></a>
+        <a class="scenario-card" href="/go/maps"><strong>Need directions</strong><span>Open the local map manager without searching menus.</span></a>
+        <a class="scenario-card" href="/offline-proof" target="_blank"><strong>Prove it is local</strong><span>Show installed counts, URLs, and privacy posture.</span></a>
       </div>
       <div class="launch-grid">
         <a class="launch-card card-knowledge" href="http://{{ host_ip }}:8080" target="_blank">
