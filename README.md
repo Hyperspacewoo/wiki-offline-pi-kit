@@ -29,6 +29,8 @@ What this now sets up automatically from this single package:
 - Offline map UI service
 - Translator runtime + Argos language packs (best effort, defaults: `en↔es`)
 - vendored `llama.cpp` build + `llama-server.service`
+- printable Field Cards for non-technical handoff and outage use
+- Offline Proof page showing installed local content, service URLs, and privacy posture
 
 For **blank-machine / no-network installs**, populate `installers/` and run:
 
@@ -76,6 +78,12 @@ Then open:
 - Kiwix: `http://<HOST_IP>:8080`
 - Offline map: `http://<HOST_IP>:8091`
 - Offline AI (llama.cpp): `http://<HOST_IP>:8092`
+- Field Cards: `http://<HOST_IP>:8090/field-cards`
+- Offline Proof: `http://<HOST_IP>:8090/offline-proof`
+
+## Market Position
+
+Project N.O.M.A.D. is a strong free Linux/Docker offline server. Offgrid Kit should be positioned differently: a ready-to-use USB product for non-technical buyers, with bundled content, simple launchers, printable handoff cards, and local proof pages that make the kit easier to trust during an outage.
 
 ### AI model switcher (UI)
 

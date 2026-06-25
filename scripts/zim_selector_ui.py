@@ -830,6 +830,16 @@ HTML = """
           <div class="launch-title">Help & recovery</div>
           <div class="launch-copy">Get URLs, service checks, and install troubleshooting fast.</div>
         </a>
+        <a class="launch-card card-library" href="/field-cards" target="_blank">
+          <div class="launch-kicker">Print</div>
+          <div class="launch-title">Field Cards</div>
+          <div class="launch-copy">Pocket-ready cards for power, water, first aid, maps, and radio notes.</div>
+        </a>
+        <a class="launch-card card-knowledge" href="/offline-proof" target="_blank">
+          <div class="launch-kicker">Verify</div>
+          <div class="launch-title">Offline Proof</div>
+          <div class="launch-copy">Show what is installed, local, private, and ready without internet.</div>
+        </a>
       </div>
       <div class="toolbar" style="margin-top:4px; grid-template-columns: 1fr auto;">
         <input id="extraDir" class="input" type="text" placeholder="Optional extra folder to include in scans" value="{{ scan_dir }}" />
@@ -996,6 +1006,7 @@ HELP_HTML = """
 <div class='top'><div><h1>Help</h1><p class='muted'>Simple answers for common tasks.</p></div><div><button id='themeToggle' class='btn' onclick='toggleTheme()'>🌙 Dark</button> <a class='btn' href='/'>Back</a></div></div>
 <div class='card'><h2>Where do I start?</h2><p class='muted'>Use the dashboard for most things. Knowledge opens the reader, Maps opens offline maps, and Translate helps with emergency phrases and everyday language.</p></div>
 <div class='card'><h2>Main addresses</h2><ul><li>Dashboard: <code>:8090</code></li><li>Knowledge: <code>:8080</code></li><li>Maps: <code>:8091</code></li><li>Assistant: <code>:8092</code></li></ul></div>
+<div class='card'><h2>Printable handoff tools</h2><ul><li><a href='/field-cards'>Field Cards</a> for paper/pocket emergency use.</li><li><a href='/offline-proof'>Offline Proof</a> for confirming local content and privacy claims.</li></ul></div>
 <div class='card'><h2>If something seems missing</h2><ul><li>Try the dashboard first and refresh once.</li><li>If translation is blank, the language pack may not be installed yet.</li><li>If a page will not open, restarting the kit usually fixes it.</li></ul></div>
 </body></html>
 """
@@ -1102,6 +1113,83 @@ async function play(){
   <div id='flash' class='flash'></div>
 </div>
 </body></html>
+"""
+
+FIELD_CARDS_HTML = """
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Field Cards - Offgrid Kit</title>
+  <style>
+    :root{--ink:#172033;--muted:#657086;--line:#d9e1ee;--blue:#0a84ff;--green:#0b7f5f;--amber:#9b6500;--red:#a4342a}
+    *{box-sizing:border-box}body{margin:0;background:#f4f7fb;color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}.wrap{max-width:1120px;margin:0 auto;padding:24px 16px 40px}
+    .top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}.muted{color:var(--muted);line-height:1.45}.btn{border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);padding:9px 12px;text-decoration:none;font-weight:700;cursor:pointer}h1{margin:0 0 6px;font-size:34px}h2{margin:0 0 8px;font-size:18px}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.card{min-height:245px;border:1px solid var(--line);border-radius:18px;background:#fff;box-shadow:0 12px 32px rgba(24,36,58,.08);padding:16px;break-inside:avoid}.kicker{font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:900;color:var(--blue);margin-bottom:8px}.card ul{margin:0;padding-left:18px;line-height:1.5}.card li{margin:4px 0}.url{display:block;border:1px dashed var(--line);border-radius:10px;padding:8px;margin:8px 0;background:#f8fbff;overflow-wrap:anywhere;font-family:ui-monospace,Consolas,monospace;font-size:13px}.red{color:var(--red)}.green{color:var(--green)}.amber{color:var(--amber)}
+    @media(max-width:760px){.grid{grid-template-columns:1fr}.top{display:grid}h1{font-size:28px}.card{min-height:auto}}
+    @media print{body{background:#fff}.wrap{max-width:none;padding:8mm}.top .actions{display:none}.grid{grid-template-columns:repeat(2,1fr);gap:6mm}.card{box-shadow:none;border-color:#999;min-height:88mm;page-break-inside:avoid}.muted{color:#333}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="top">
+      <div><h1>Field Cards</h1><p class="muted">Print these as a simple handoff sheet. They are fast prompts and local URLs, not professional emergency instructions.</p></div>
+      <div class="actions"><button class="btn" onclick="print()">Print</button> <a class="btn" href="/">Dashboard</a></div>
+    </div>
+    <section class="grid">
+      <article class="card"><div class="kicker">Start</div><h2>Open the kit</h2><span class="url">http://{{ host_ip }}:8090</span><ul><li>Use the dashboard first.</li><li>Open Knowledge for articles.</li><li>Open Maps for local map packs.</li><li>Use Safe OS eject after stopping services.</li></ul></article>
+      <article class="card"><div class="kicker">Power</div><h2>Power outage checklist</h2><ul><li>Dim screen and close unused tabs.</li><li>Use Knowledge/Maps before AI to save battery.</li><li>Write down important answers in notes or paper.</li><li>Keep the USB connected until done.</li></ul></article>
+      <article class="card"><div class="kicker">Water</div><h2>Water reference flow</h2><ul><li>Search: <strong>water purification</strong>.</li><li>Filter visible sediment first when possible.</li><li>Use local sources to confirm treatment time/dose.</li><li class="red">Do not guess on contamination or chemicals.</li></ul></article>
+      <article class="card"><div class="kicker">Medical</div><h2>First-aid reference flow</h2><ul><li>Search: <strong>first aid</strong>.</li><li>Check breathing, severe bleeding, shock, and consciousness first.</li><li>Use references for details after immediate danger is stabilized.</li><li class="red">Call emergency services when available.</li></ul></article>
+      <article class="card"><div class="kicker">Navigation</div><h2>Map flow</h2><span class="url">http://{{ host_ip }}:8091</span><ul><li>Mark current location and destination.</li><li>Check terrain before moving.</li><li>Use short route legs and confirm landmarks.</li><li>Keep paper notes of coordinates.</li></ul></article>
+      <article class="card"><div class="kicker">Comms</div><h2>Translation and Morse</h2><ul><li>Translator: dashboard → Translate.</li><li>Morse tool: <span class="url">http://{{ host_ip }}:8090/morse</span></li><li>Send location, condition, needs, and time.</li><li>Keep messages short and repeatable.</li></ul></article>
+      <article class="card"><div class="kicker">AI</div><h2>Ask better questions</h2><ul><li>Use short prompts.</li><li>Ask for checklists, warnings, and source terms.</li><li>Verify critical facts in Knowledge.</li><li class="amber">AI is a helper, not authority.</li></ul></article>
+      <article class="card"><div class="kicker">Proof</div><h2>What this kit has</h2><ul><li>{{ loaded_count }} ZIM packs.</li><li>{{ ebook_count }} document files.</li><li>{{ model_count }} AI model file(s).</li><li class="green">Runs locally after setup; no account required.</li></ul></article>
+    </section>
+  </main>
+</body>
+</html>
+"""
+
+OFFLINE_PROOF_HTML = """
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Offline Proof - Offgrid Kit</title>
+  <style>
+    :root{--ink:#172033;--muted:#657086;--line:#d9e1ee;--blue:#0a84ff;--green:#0b7f5f}
+    *{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#f8fbff,#eef5ff);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}.wrap{max-width:1040px;margin:0 auto;padding:26px 16px 42px}.top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}.muted{color:var(--muted);line-height:1.45}.btn{border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);padding:9px 12px;text-decoration:none;font-weight:700;cursor:pointer}h1{margin:0 0 6px;font-size:34px}h2{margin:0 0 8px;font-size:20px}.hero,.card{border:1px solid var(--line);border-radius:20px;background:rgba(255,255,255,.86);box-shadow:0 16px 38px rgba(24,36,58,.08);padding:18px}.hero{margin-bottom:12px}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.stat b{display:block;font-size:30px;color:var(--blue)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}.card ul{margin:0;padding-left:18px;line-height:1.55}.url{display:block;border:1px dashed var(--line);border-radius:10px;padding:8px;margin:8px 0;background:#f8fbff;overflow-wrap:anywhere;font-family:ui-monospace,Consolas,monospace;font-size:13px}.pass{color:var(--green);font-weight:800}
+    @media(max-width:760px){.stats,.grid{grid-template-columns:1fr}.top{display:grid}h1{font-size:28px}}
+    @media print{body{background:#fff}.top .actions{display:none}.hero,.card{box-shadow:none;border-color:#999;break-inside:avoid}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="top">
+      <div><h1>Offline Proof</h1><p class="muted">A buyer-facing proof page showing what is local, private, and ready on this machine.</p></div>
+      <div class="actions"><button class="btn" onclick="print()">Print</button> <a class="btn" href="/">Dashboard</a></div>
+    </div>
+    <section class="hero">
+      <h2>Installed locally</h2>
+      <div class="stats">
+        <div class="stat"><b>{{ loaded_count }}</b><span class="muted">ZIM packs</span></div>
+        <div class="stat"><b>{{ ebook_count }}</b><span class="muted">Documents</span></div>
+        <div class="stat"><b>{{ model_count }}</b><span class="muted">AI models</span></div>
+        <div class="stat"><b>{{ roots_count }}</b><span class="muted">Roots scanned</span></div>
+      </div>
+    </section>
+    <section class="grid">
+      <article class="card"><h2>Local URLs</h2><span class="url">Dashboard: http://{{ host_ip }}:8090</span><span class="url">Knowledge: http://{{ host_ip }}:8080</span><span class="url">Maps: http://{{ host_ip }}:8091</span><span class="url">AI: http://{{ host_ip }}:8092</span></article>
+      <article class="card"><h2>Privacy posture</h2><ul><li class="pass">No cloud account required.</li><li class="pass">Local Kiwix, maps, translation, and llama.cpp services.</li><li>LAN exposure depends on how the user launches/services bind.</li><li>No telemetry code is required for the dashboard workflow.</li></ul></article>
+      <article class="card"><h2>Support status</h2><ul><li>{{ health_summary }}</li><li>{{ translator_status }}</li><li>{{ ai_status.label }}: {{ ai_status.detail }}</li></ul></article>
+      <article class="card"><h2>USB product advantage</h2><ul><li>Designed as a handoff kit, not just a server installer.</li><li>Works from bundled content instead of forcing a fresh download.</li><li>Includes printable field cards for non-technical users.</li></ul></article>
+    </section>
+  </main>
+</body>
+</html>
 """
 
 AI_BASE = os.environ.get("AI_BASE", f"http://127.0.0.1:{os.environ.get('LLAMA_PORT', '8092')}")
@@ -1803,6 +1891,23 @@ def build_page(extra_scan_dir: str, do_resync: bool, tr_input: str = "", tr_sour
     )
 
 
+def proof_context(extra_scan_dir: str = ""):
+    roots = build_roots(extra_scan_dir)
+    paths = scan_zims(roots)
+    _, ebooks = list_ebooks(limit=5000)
+    models = discover_ai_models()
+    return {
+        "host_ip": host_ip(),
+        "loaded_count": len(paths),
+        "ebook_count": len(ebooks),
+        "model_count": len(models),
+        "roots_count": len(roots),
+        "health_summary": health_summary_text(),
+        "translator_status": translator_status_text()[0],
+        "ai_status": ai_status_info(),
+    }
+
+
 
 
 AI_PAGE_HTML = """<!doctype html>
@@ -1908,6 +2013,16 @@ def index():
 @app.get("/help")
 def help_page():
     return HELP_HTML
+
+
+@app.get("/field-cards")
+def field_cards_page():
+    return render_template_string(FIELD_CARDS_HTML, **proof_context(request.args.get("scan_dir", "")))
+
+
+@app.get("/offline-proof")
+def offline_proof_page():
+    return render_template_string(OFFLINE_PROOF_HTML, **proof_context(request.args.get("scan_dir", "")))
 
 
 @app.get("/setup")
