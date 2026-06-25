@@ -38,6 +38,8 @@ EBOOK_ROOTS = [
     KIT_ROOT / "ebooks",
 ]
 EBOOK_EXTS = {".pdf", ".epub", ".mobi", ".azw3", ".txt", ".md"}
+VERSION_FILE = KIT_ROOT / "config" / "VERSION.json"
+DEFAULT_UPDATE_MANIFEST_URL = "https://raw.githubusercontent.com/Hyperspacewoo/wiki-offline-pi-kit/main/config/update_manifest.json"
 
 HTML = """
 <!doctype html>
@@ -45,7 +47,7 @@ HTML = """
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Offgrid Intel Kit • Offline Console</title>
+  <title>Offgrid Kit • Offline Console</title>
   <script>
     let activeCategory = 'all';
 
@@ -753,7 +755,7 @@ HTML = """
         <div class="hero-card">
           <div class="eyebrow">Offline-first command center</div>
           <div class="hero-top">
-            <h1 class="hero-title">Offgrid Intel Kit</h1>
+            <h1 class="hero-title">Offgrid Kit</h1>
             <p class="hero-copy">A bright, low-stress home screen for knowledge, maps, translation, and local AI — built so anyone can walk up and know where to begin.</p>
             <div class="meta-row">
               <div class="meta-pill"><strong>{{ total }}</strong> knowledge packs ready</div>
@@ -764,6 +766,7 @@ HTML = """
               <a class="btn btn-accent" href="http://{{ host_ip }}:8080" target="_blank">Open Knowledge</a>
               <a class="btn btn-mint" href="http://{{ host_ip }}:8091">Open Maps</a>
               <a class="btn btn-soft" href="http://{{ host_ip }}:8092" target="_blank">Open AI</a>
+              <a class="btn btn-soft" href="/updates">Updates</a>
               <a class="btn btn-soft" href="#translator">Translate</a>
             </div>
             <div class="hero-note">
@@ -829,6 +832,11 @@ HTML = """
           <div class="launch-kicker">Support</div>
           <div class="launch-title">Help & recovery</div>
           <div class="launch-copy">Get URLs, service checks, and install troubleshooting fast.</div>
+        </a>
+        <a class="launch-card card-help" href="/updates">
+          <div class="launch-kicker">Maintain</div>
+          <div class="launch-title">Updates</div>
+          <div class="launch-copy">Manually check the official update manifest when internet is available.</div>
         </a>
         <a class="launch-card card-library" href="/field-cards" target="_blank">
           <div class="launch-kicker">Print</div>
@@ -1192,6 +1200,69 @@ OFFLINE_PROOF_HTML = """
 </html>
 """
 
+UPDATES_HTML = """
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Updates - Offgrid Kit</title>
+  <style>
+    :root{--ink:#172033;--muted:#657086;--line:#d9e1ee;--blue:#0a84ff;--green:#0b7f5f;--red:#a4342a;--amber:#9b6500}
+    *{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#f8fbff,#eef5ff);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}.wrap{max-width:980px;margin:0 auto;padding:26px 16px 42px}.top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}.muted{color:var(--muted);line-height:1.45}.btn{border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);padding:9px 12px;text-decoration:none;font-weight:700;cursor:pointer}.btn-primary{background:var(--blue);border-color:var(--blue);color:#fff}h1{margin:0 0 6px;font-size:34px}h2{margin:0 0 8px;font-size:20px}.card{border:1px solid var(--line);border-radius:20px;background:rgba(255,255,255,.9);box-shadow:0 16px 38px rgba(24,36,58,.08);padding:18px;margin-bottom:12px}.row{display:grid;grid-template-columns:190px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}.row:last-child{border-bottom:0}.status{border-radius:14px;padding:12px;background:#f8fbff;border:1px solid var(--line);margin-top:12px}.status.ok strong{color:var(--green)}.status.warn strong{color:var(--amber)}.status.bad strong{color:var(--red)}code{background:#f1f5fb;border:1px solid var(--line);border-radius:7px;padding:2px 5px;overflow-wrap:anywhere}.actions{display:flex;gap:8px;flex-wrap:wrap}.details{white-space:pre-wrap}
+    @media(max-width:680px){.top,.row{display:grid;grid-template-columns:1fr}h1{font-size:28px}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="top">
+      <div><h1>Updates</h1><p class="muted">Manual checks only. Nothing installs automatically.</p></div>
+      <div class="actions"><button class="btn btn-primary" onclick="checkUpdates()">Check Now</button><a class="btn" href="/">Dashboard</a></div>
+    </div>
+    <section class="card">
+      <h2>Current kit</h2>
+      <div class="row"><strong>Product</strong><span>{{ current.name }}</span></div>
+      <div class="row"><strong>Version</strong><span>{{ current.version }}</span></div>
+      <div class="row"><strong>Updated</strong><span>{{ current.updated }}</span></div>
+      <div class="row"><strong>Channel</strong><span>{{ current.channel or 'stable' }}</span></div>
+      <div class="row"><strong>Update source</strong><span><code>{{ update_source or 'not configured' }}</code></span></div>
+      <div class="status warn"><strong>Policy:</strong> Offgrid Kit never auto-updates. User content in <code>models/</code>, <code>ebooks/</code>, and <code>zims/</code> is preserved.</div>
+    </section>
+    <section class="card">
+      <h2>Check result</h2>
+      <div id="updateResult" class="status">Click <strong>Check Now</strong> when internet is available.</div>
+    </section>
+  </main>
+  <script>
+    async function checkUpdates(){
+      const box = document.getElementById('updateResult');
+      box.className = 'status';
+      box.textContent = 'Checking official update manifest...';
+      try {
+        const res = await fetch('/api/update/check');
+        const data = await res.json();
+        const latest = data.latest || {};
+        box.className = 'status ' + (data.ok ? (data.update_available ? 'warn' : 'ok') : 'bad');
+        let html = '<strong>' + (data.message || 'Update check finished.') + '</strong>';
+        if (data.ok) {
+          html += '<div class="details">Latest: ' + (latest.version || 'unknown') + '\\nUpdated: ' + (latest.updated || 'unknown') + '\\nSummary: ' + (latest.summary || 'No notes supplied.') + '</div>';
+          if (latest.release_notes_url) html += '<p><a href="' + latest.release_notes_url + '" target="_blank">Release notes</a></p>';
+          if (latest.download_url) html += '<p><a href="' + latest.download_url + '" target="_blank">Download update</a></p>';
+          if (latest.checksum_sha256) html += '<p class="muted">Expected SHA-256: <code>' + latest.checksum_sha256 + '</code></p>';
+        } else if (data.source) {
+          html += '<p class="muted">Source: <code>' + data.source + '</code></p>';
+        }
+        box.innerHTML = html;
+      } catch (err) {
+        box.className = 'status bad';
+        box.innerHTML = '<strong>Update check failed.</strong><p class="muted">' + err + '</p>';
+      }
+    }
+  </script>
+</body>
+</html>
+"""
+
 AI_BASE = os.environ.get("AI_BASE", f"http://127.0.0.1:{os.environ.get('LLAMA_PORT', '8092')}")
 AI_MODEL_Q8 = os.environ.get("LLAMA_MODEL_Q8", str(KIT_ROOT / "models/local-qwen/Huihui-Qwen3.5-4B-abliterated.Q8_0.gguf"))
 AI_MODEL_Q4 = os.environ.get("LLAMA_MODEL_Q4", str(KIT_ROOT / "models/local-qwen/Huihui-Qwen3.5-4B-abliterated.Q4_K_M.gguf"))
@@ -1227,6 +1298,86 @@ def format_size(n: int) -> str:
             return f"{x:.1f} {u}" if u != "B" else f"{int(x)} B"
         x /= 1024
     return f"{n} B"
+
+
+def read_version_info() -> dict:
+    fallback = {
+        "name": "offgrid-kit",
+        "version": "1.0.0",
+        "updated": "2026-06-25",
+        "channel": "stable",
+        "update_manifest_url": DEFAULT_UPDATE_MANIFEST_URL,
+    }
+    try:
+        if VERSION_FILE.exists():
+            data = json.loads(VERSION_FILE.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                return {**fallback, **data}
+    except Exception:
+        pass
+    return fallback
+
+
+def update_manifest_url() -> str:
+    return (
+        os.environ.get("OFFGRID_UPDATE_MANIFEST_URL")
+        or read_version_info().get("update_manifest_url")
+        or DEFAULT_UPDATE_MANIFEST_URL
+    ).strip()
+
+
+def parse_version_tuple(value: str) -> tuple:
+    parts = re.findall(r"\d+", value or "")
+    return tuple(int(p) for p in parts[:4]) if parts else (0,)
+
+
+def check_update_manifest() -> dict:
+    current = read_version_info()
+    url = update_manifest_url()
+    policy = "Manual check only. Offgrid Kit never auto-updates and preserves user content in models/, ebooks/, and zims/."
+    if not url:
+        return {
+            "ok": False,
+            "configured": False,
+            "current": current,
+            "policy": policy,
+            "message": "No update manifest URL is configured.",
+        }
+    try:
+        response = requests.get(url, timeout=12, headers={"User-Agent": "OffgridKitUpdater/1.0"})
+        response.raise_for_status()
+        remote = response.json()
+        if not isinstance(remote, dict):
+            raise ValueError("Update manifest must be a JSON object.")
+        latest = str(remote.get("version") or remote.get("latest_version") or "")
+        update_available = parse_version_tuple(latest) > parse_version_tuple(str(current.get("version") or ""))
+        return {
+            "ok": True,
+            "configured": True,
+            "source": url,
+            "current": current,
+            "latest": {
+                "version": latest,
+                "updated": remote.get("updated") or remote.get("date") or "",
+                "channel": remote.get("channel") or "",
+                "summary": remote.get("summary") or remote.get("notes") or "",
+                "release_notes_url": remote.get("release_notes_url") or "",
+                "download_url": remote.get("download_url") or "",
+                "checksum_sha256": remote.get("checksum_sha256") or "",
+            },
+            "update_available": update_available,
+            "policy": policy,
+            "message": "Update available." if update_available else "This kit is up to date.",
+        }
+    except Exception as exc:
+        return {
+            "ok": False,
+            "configured": True,
+            "source": url,
+            "current": current,
+            "policy": policy,
+            "message": f"Update check failed: {exc}",
+        }
 
 
 def build_roots(extra: str):
@@ -2025,6 +2176,12 @@ def offline_proof_page():
     return render_template_string(OFFLINE_PROOF_HTML, **proof_context(request.args.get("scan_dir", "")))
 
 
+@app.get("/updates")
+def updates_page():
+    current = read_version_info()
+    return render_template_string(UPDATES_HTML, current=current, update_source=update_manifest_url())
+
+
 @app.get("/setup")
 def setup_page():
     return SETUP_HTML
@@ -2087,6 +2244,11 @@ def morse_page():
 def health_page():
     summary = health_summary_text()
     return jsonify({"summary": summary})
+
+
+@app.get("/api/update/check")
+def api_update_check():
+    return jsonify(check_update_manifest())
 
 
 @app.post("/api/admin/action")

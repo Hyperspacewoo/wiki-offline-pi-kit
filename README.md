@@ -1,4 +1,4 @@
-# Offgrid Intel Kit (Clean Structure)
+# Offgrid Kit
 
 Offline-first knowledge + maps bundle with Kiwix dashboard and local translation.
 Offline AI is powered by local `llama.cpp` (`llama-server`).
@@ -31,6 +31,7 @@ What this now sets up automatically from this single package:
 - vendored `llama.cpp` build + `llama-server.service`
 - printable Field Cards for non-technical handoff and outage use
 - Offline Proof page showing installed local content, service URLs, and privacy posture
+- manual Updates page that checks the official manifest only when the user asks
 
 For **blank-machine / no-network installs**, populate `installers/` and run:
 
@@ -71,6 +72,8 @@ Then open:
 - Launch checklist: `docs/LAUNCH_CHECKLIST.md`
 - Offline test matrix: `docs/OFFLINE_TEST_MATRIX.md`
 - Fast QA runbook: `docs/QA_RUNBOOK.md`
+- National launch checklist: `docs/NATIONAL_LAUNCH_FINAL_CHECKLIST.md`
+- Manual update channel: `docs/UPDATE_CHANNEL.md`
 
 ## Main URLs
 
@@ -80,6 +83,7 @@ Then open:
 - Offline AI (llama.cpp): `http://<HOST_IP>:8092`
 - Field Cards: `http://<HOST_IP>:8090/field-cards`
 - Offline Proof: `http://<HOST_IP>:8090/offline-proof`
+- Updates: `http://<HOST_IP>:8090/updates`
 
 ## Market Position
 

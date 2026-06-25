@@ -1,0 +1,16 @@
+{
+  "name": "offgrid-kit",
+  "version": "1.0.0",
+  "updated": "2026-06-25",
+  "channel": "stable",
+  "summary": "Initial production-ready public manifest. Manual update checks are supported; updates never install automatically.",
+  "release_notes_url": "https://github.com/Hyperspacewoo/wiki-offline-pi-kit/releases",
+  "download_url": "https://github.com/Hyperspacewoo/wiki-offline-pi-kit/releases",
+  "checksum_sha256": "",
+  "minimum_supported_version": "1.0.0",
+  "preserve_user_content": [
+    "models/",
+    "ebooks/",
+    "zims/"
+  ]
+}

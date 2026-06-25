@@ -1,12 +1,17 @@
 {
-  "name": "offgrid-intel-kit",
+  "name": "offgrid-kit",
   "version": "1.0.0",
-  "updated": "2026-03-05",
+  "updated": "2026-06-25",
+  "channel": "stable",
+  "update_manifest_url": "https://raw.githubusercontent.com/Hyperspacewoo/wiki-offline-pi-kit/main/config/update_manifest.json",
   "features": [
     "unified-dashboard",
     "always-load-all-zims",
     "wiki-search-and-parse",
     "offline-map-ui",
-    "usb-installer"
+    "usb-installer",
+    "manual-update-check",
+    "field-cards",
+    "offline-proof"
   ]
 }
