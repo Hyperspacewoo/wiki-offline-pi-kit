@@ -39,6 +39,7 @@ EBOOK_ROOTS = [
 ]
 EBOOK_EXTS = {".pdf", ".epub", ".mobi", ".azw3", ".txt", ".md"}
 VERSION_FILE = KIT_ROOT / "config" / "VERSION.json"
+LOCAL_UPDATE_MANIFEST_FILE = KIT_ROOT / "config" / "update_manifest.json"
 DEFAULT_UPDATE_MANIFEST_URL = "https://raw.githubusercontent.com/Hyperspacewoo/wiki-offline-pi-kit/main/config/update_manifest.json"
 
 HTML = """
@@ -1246,6 +1247,7 @@ UPDATES_HTML = """
         let html = '<strong>' + (data.message || 'Update check finished.') + '</strong>';
         if (data.ok) {
           html += '<div class="details">Latest: ' + (latest.version || 'unknown') + '\\nUpdated: ' + (latest.updated || 'unknown') + '\\nSummary: ' + (latest.summary || 'No notes supplied.') + '</div>';
+          if (data.online === false && data.online_error) html += '<p class="muted">Online source unavailable; checked bundled manifest instead. Online error: <code>' + data.online_error + '</code></p>';
           if (latest.release_notes_url) html += '<p><a href="' + latest.release_notes_url + '" target="_blank">Release notes</a></p>';
           if (latest.download_url) html += '<p><a href="' + latest.download_url + '" target="_blank">Download update</a></p>';
           if (latest.checksum_sha256) html += '<p class="muted">Expected SHA-256: <code>' + latest.checksum_sha256 + '</code></p>';
@@ -1331,6 +1333,33 @@ def parse_version_tuple(value: str) -> tuple:
     return tuple(int(p) for p in parts[:4]) if parts else (0,)
 
 
+def update_result_from_manifest(remote: dict, current: dict, source: str, policy: str, online: bool = True, message_prefix: str = "") -> dict:
+    latest = str(remote.get("version") or remote.get("latest_version") or "")
+    update_available = parse_version_tuple(latest) > parse_version_tuple(str(current.get("version") or ""))
+    message = "Update available." if update_available else "This kit is up to date."
+    if message_prefix:
+        message = f"{message_prefix} {message}"
+    return {
+        "ok": True,
+        "configured": True,
+        "online": online,
+        "source": source,
+        "current": current,
+        "latest": {
+            "version": latest,
+            "updated": remote.get("updated") or remote.get("date") or "",
+            "channel": remote.get("channel") or "",
+            "summary": remote.get("summary") or remote.get("notes") or "",
+            "release_notes_url": remote.get("release_notes_url") or "",
+            "download_url": remote.get("download_url") or "",
+            "checksum_sha256": remote.get("checksum_sha256") or "",
+        },
+        "update_available": update_available,
+        "policy": policy,
+        "message": message,
+    }
+
+
 def check_update_manifest() -> dict:
     current = read_version_info()
     url = update_manifest_url()
@@ -1349,27 +1378,25 @@ def check_update_manifest() -> dict:
         remote = response.json()
         if not isinstance(remote, dict):
             raise ValueError("Update manifest must be a JSON object.")
-        latest = str(remote.get("version") or remote.get("latest_version") or "")
-        update_available = parse_version_tuple(latest) > parse_version_tuple(str(current.get("version") or ""))
-        return {
-            "ok": True,
-            "configured": True,
-            "source": url,
-            "current": current,
-            "latest": {
-                "version": latest,
-                "updated": remote.get("updated") or remote.get("date") or "",
-                "channel": remote.get("channel") or "",
-                "summary": remote.get("summary") or remote.get("notes") or "",
-                "release_notes_url": remote.get("release_notes_url") or "",
-                "download_url": remote.get("download_url") or "",
-                "checksum_sha256": remote.get("checksum_sha256") or "",
-            },
-            "update_available": update_available,
-            "policy": policy,
-            "message": "Update available." if update_available else "This kit is up to date.",
-        }
+        return update_result_from_manifest(remote, current, url, policy, online=True)
     except Exception as exc:
+        try:
+            if LOCAL_UPDATE_MANIFEST_FILE.exists():
+                local = json.loads(LOCAL_UPDATE_MANIFEST_FILE.read_text(encoding="utf-8"))
+                if isinstance(local, dict):
+                    result = update_result_from_manifest(
+                        local,
+                        current,
+                        str(LOCAL_UPDATE_MANIFEST_FILE),
+                        policy,
+                        online=False,
+                        message_prefix="Online update source unavailable; using bundled manifest.",
+                    )
+                    result["online_error"] = str(exc)
+                    result["online_source"] = url
+                    return result
+        except Exception:
+            pass
         return {
             "ok": False,
             "configured": True,

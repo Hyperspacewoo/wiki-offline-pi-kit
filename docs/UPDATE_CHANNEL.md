@@ -24,6 +24,10 @@ The current kit reads its update source from `config/VERSION.json`:
 "update_manifest_url": "https://raw.githubusercontent.com/Hyperspacewoo/wiki-offline-pi-kit/main/config/update_manifest.json"
 ```
 
+For national customers, this URL must be publicly reachable without GitHub authentication. If the repository is private, use a public website, public object-storage URL, GitHub Pages site, or a public release asset URL instead.
+
+If the online manifest cannot be reached, the Updates page falls back to the bundled `config/update_manifest.json` so the button still gives a clear result instead of failing silently. That fallback can confirm the local version, but it cannot discover newer releases.
+
 To announce a new version:
 
 1. Publish the release artifact.
