@@ -17,11 +17,16 @@ models/local-qwen/
 /installers/*.AppxBundle
 /installers/*.appxbundle
 /installers/*.msixbundle
+/installers/*.zip
+/installers/*.tar.gz
+/installers/*.pkg
 
 # Python
 __pycache__/
 *.pyc
 .venv/
+offgrid-runtime/
+ebooks/
 
 # OS
 .DS_Store
