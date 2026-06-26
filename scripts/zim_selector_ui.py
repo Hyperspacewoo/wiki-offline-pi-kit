@@ -888,6 +888,11 @@ HTML = """
           <div class="launch-title">Help & recovery</div>
           <div class="launch-copy">Get URLs, service checks, and install troubleshooting fast.</div>
         </a>
+        <a class="launch-card card-maps" href="/setup">
+          <div class="launch-kicker">First run</div>
+          <div class="launch-title">Setup check</div>
+          <div class="launch-copy">Prepare folders, verify the bundle, and confirm the kit is ready.</div>
+        </a>
         <a class="launch-card card-help" href="/updates">
           <div class="launch-kicker">Maintain</div>
           <div class="launch-title">Updates</div>
@@ -1089,30 +1094,47 @@ EBOOKS_HTML = """
 """
 
 SETUP_HTML = """
-<!doctype html><html><head><meta charset='utf-8'><title>Instant Personalize</title>
+<!doctype html><html><head><meta charset='utf-8'><title>Setup Check</title>
 <style>
-body{font-family:Inter,Arial,sans-serif;max-width:980px;margin:24px auto;padding:0 16px;color:#eaf0ff;background:#0b1020}
-h1{color:#9ec0ff}.card{border:1px solid #2a3b63;background:#121a2b;border-radius:12px;padding:12px;margin-bottom:12px}
-.muted{color:#a9b5d1}.btn{border:1px solid #2a3b63;border-radius:10px;padding:8px 12px;background:#1d2f57;color:#e7edff;cursor:pointer}
-pre{border:1px solid #2a3b63;background:#0f1830;border-radius:10px;padding:10px;white-space:pre-wrap}
+:root{--bg:#f4f7fb;--card:#fff;--line:#d9e1ee;--text:#172033;--muted:#657086;--blue:#0a84ff;--green:#0b7f5f;--amber:#9b6500}
+*{box-sizing:border-box}body{font-family:Inter,Arial,sans-serif;max-width:1040px;margin:24px auto;padding:0 16px;color:var(--text);background:linear-gradient(135deg,#f8fbff,#eef5ff)}
+h1{margin:0 0 6px;font-size:36px}.muted{color:var(--muted);line-height:1.5}.top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px}
+.card{border:1px solid var(--line);background:rgba(255,255,255,.9);border-radius:20px;padding:18px;margin-bottom:12px;box-shadow:0 16px 38px rgba(24,36,58,.08)}
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}.step{border:1px solid var(--line);border-radius:16px;background:#fff;padding:14px;text-align:left;cursor:pointer;color:var(--text)}
+.step strong{display:block;margin-bottom:5px}.step span{display:block;color:var(--muted);font-size:13px;line-height:1.35}.step:hover{border-color:#aacfff}
+.btn{border:1px solid var(--line);border-radius:12px;padding:9px 12px;background:#fff;color:var(--text);cursor:pointer;text-decoration:none;font-weight:700}.btn-primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.status-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.pill{border:1px solid var(--line);border-radius:14px;background:#f8fbff;padding:11px}.pill b{display:block;color:var(--green);margin-bottom:3px}
+pre{border:1px solid var(--line);background:#f8fbff;border-radius:14px;padding:12px;white-space:pre-wrap;max-height:360px;overflow:auto}
+@media(max-width:820px){.steps,.status-grid{grid-template-columns:1fr}.top{display:grid}h1{font-size:30px}}
 </style>
 <script>
 async function runStep(action){
   const out=document.getElementById('out');
-  out.textContent='Working on it…';
+  out.textContent='Working...';
   const r=await fetch('/api/admin/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action})});
   const d=await r.json();
-  out.textContent=(d.ok?'✅ ':'⚠️ ')+(d.message||'')+'\n\n'+(d.output||'');
+  out.textContent=(d.ok?'OK: ':'CHECK: ')+(d.message||'')+'\n\n'+(d.output||'');
 }
 </script>
 </head><body>
-<h1>Instant Personalize</h1>
+<div class='top'><div><h1>Setup Check</h1><p class='muted'>Use this page on a fresh machine before handing the kit to a tester or customer.</p></div><div><a class='btn' href='/'>Dashboard</a> <a class='btn btn-primary' href='/offline-proof'>Offline Proof</a></div></div>
 <div class='card'>
-  <p class='muted'>You’re already live. Use these one-tap actions to personalize and verify your system in under a minute.</p>
-  <button class='btn' onclick="runStep('setup_dirs')">1) Prepare My Library</button>
-  <button class='btn' onclick="runStep('doctor')">2) Run Confidence Check</button>
-  <button class='btn' onclick="runStep('verify')">3) Verify Bundle Integrity</button>
-  <button class='btn' onclick="runStep('sync_usb')">4) Import My USB Content</button>
+  <h2>Fast launch check</h2>
+  <p class='muted'>These actions are safe to run repeatedly. They prepare user folders, check services, verify shipped files, and import bundled USB content when present.</p>
+  <div class='steps'>
+    <button class='step' onclick="runStep('setup_dirs')"><strong>1. Prepare folders</strong><span>Create library folders without touching existing books, models, or ZIMs.</span></button>
+    <button class='step' onclick="runStep('doctor')"><strong>2. Health check</strong><span>Check expected services and common launch problems.</span></button>
+    <button class='step' onclick="runStep('verify')"><strong>3. Verify bundle</strong><span>Confirm shipped files match the checksum manifest.</span></button>
+    <button class='step' onclick="runStep('sync_usb')"><strong>4. Import USB content</strong><span>Pull ZIMs from the configured USB source if available.</span></button>
+  </div>
+</div>
+<div class='card'>
+  <h2>What should pass before testing</h2>
+  <div class='status-grid'>
+    <div class='pill'><b>Dashboard opens</b><span class='muted'>Main screen loads at port 8090.</span></div>
+    <div class='pill'><b>Knowledge opens</b><span class='muted'>Kiwix opens at port 8080 and search returns results.</span></div>
+    <div class='pill'><b>User content preserved</b><span class='muted'>Models, ebooks, and ZIMs are never overwritten by updates.</span></div>
+  </div>
 </div>
 <div class='card'><pre id='out'>Ready. Press step 1.</pre></div>
 </body></html>
