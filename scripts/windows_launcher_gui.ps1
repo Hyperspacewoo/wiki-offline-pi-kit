@@ -23,6 +23,15 @@ function Open-Url($Url) {
   }
 }
 
+function Get-StatusText {
+  try {
+    $r = Invoke-RestMethod -Uri "http://localhost:8090/health" -TimeoutSec 2
+    return "Dashboard reachable. $($r.summary)"
+  } catch {
+    return "Dashboard not running yet. Click Start / Repair Kit on a fresh machine."
+  }
+}
+
 function Set-Status($Text) {
   $script:StatusBox.Text = $Text
 }
@@ -132,7 +141,7 @@ for ($i = 0; $i -lt $buttons.Count; $i++) {
   $col = $i % 4
   $row = [Math]::Floor($i / 4)
   $b.Location = New-Object System.Drawing.Point(($x0 + ($col * ($w + $gapX))), ($y0 + ($row * ($h + $gapY))))
-  $b.Add_Click({ Open-Url $this.Tag })
+  $b.Add_Click({ param($sender, $eventArgs) Open-Url $sender.Tag })
   $Form.Controls.Add($b)
 }
 
@@ -180,5 +189,5 @@ $script:StatusBox.Size = New-Object System.Drawing.Size(528, 108)
 $script:StatusBox.Location = New-Object System.Drawing.Point(28, 350)
 $Form.Controls.Add($script:StatusBox)
 
-Set-Status "Ready. Click Start / Repair Kit on a fresh machine, or Open Dashboard if services are already running."
+Set-Status (Get-StatusText)
 [void]$Form.ShowDialog()

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Canonical runtime + bundle layout for Offgrid Intel Kit.
+# Canonical runtime + bundle layout for Offgrid Kit.
 # - WIKI_KIT_ROOT: immutable code/docs bundle (this repo copy)
 # - WIKI_RUNTIME_ROOT: mutable runtime data, venv, maps config, active zims
 

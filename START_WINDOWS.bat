@@ -11,7 +11,8 @@ if exist "%GUI_PS1%" (
   where powershell.exe >nul 2>nul
   if not errorlevel 1 (
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%GUI_PS1%" -KitDir "%KIT_DIR%"
-    goto :eof
+    if not errorlevel 1 goto :eof
+    echo GUI launcher failed. Falling back to setup bootstrap...
   )
 )
 

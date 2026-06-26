@@ -9,7 +9,7 @@ if ([string]::IsNullOrWhiteSpace($KitDir)) {
 }
 $KitDir = (Resolve-Path -LiteralPath $KitDir).Path
 
-Write-Host "[Offgrid Wiki] Kit dir: $KitDir"
+Write-Host "[Offgrid Kit] Kit dir: $KitDir"
 $installers = Join-Path $KitDir "installers"
 if (-not (Test-Path $installers)) {
   New-Item -ItemType Directory -Force -Path $installers | Out-Null

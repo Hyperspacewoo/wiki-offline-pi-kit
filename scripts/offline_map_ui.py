@@ -29,7 +29,7 @@ FALLBACK_DATA_DIRS = [
 ]
 
 DEFAULT_CONFIG = {
-    "title": "Offgrid Intel Kit Map",
+    "title": "Offgrid Kit Map",
     "pmtiles": "usa.pmtiles",
     "center": [-98.58, 39.83],
     "zoom": 4,
@@ -49,7 +49,7 @@ INDEX_HTML = """<!doctype html>
 <head>
   <meta charset=\"utf-8\" />
   <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\" />
-  <title>Offgrid Intel Kit Map</title>
+  <title>Offgrid Kit Map</title>
   <link rel=\"stylesheet\" href=\"/static/maplibre-gl.css\" />
   <style>
     :root {
@@ -181,7 +181,7 @@ INDEX_HTML = """<!doctype html>
     <div class="eyebrow">Offline map workspace</div>
     <div class="panel-head">
       <div>
-        <div id="title" class="title">Offgrid Intel Kit Map</div>
+        <div id="title" class="title">Offgrid Kit Map</div>
         <div class="small">Now viewing: <span id="pmtilesName"></span></div>
         <div id="datasetSummary" class="small subtle"></div>
       </div>
@@ -281,10 +281,10 @@ INDEX_HTML = """<!doctype html>
     }
 
     function labelDataset(name) {
-      const simple = (name || '').replace(/\.pmtiles$/i, '');
+      const simple = (name || '').replace(/\\.pmtiles$/i, '');
       if (simple.toLowerCase() === 'usa') return 'United States';
       if (simple.toLowerCase() === 'nyc') return 'New York City';
-      return simple.replace(/[-_]+/g, ' ').replace(/\w/g, c => c.toUpperCase());
+      return simple.replace(/[-_]+/g, ' ').replace(/\\b\\w/g, c => c.toUpperCase());
     }
 
     function resetView() {
@@ -299,7 +299,7 @@ INDEX_HTML = """<!doctype html>
         center: cfg.center || [-98.58, 39.83],
         zoom: cfg.zoom || 4
       };
-      document.getElementById('title').textContent = cfg.title || 'Offgrid Intel Kit Map';
+      document.getElementById('title').textContent = cfg.title || 'Offgrid Kit Map';
       document.getElementById('pmtilesName').textContent = labelDataset(cfg.pmtiles);
 
       try {
