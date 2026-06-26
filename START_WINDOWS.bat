@@ -4,12 +4,21 @@ setlocal enabledelayedexpansion
 for %%I in ("%~dp0") do set "KIT_DIR=%%~fI"
 if "%KIT_DIR:~-1%"=="\" set "KIT_DIR=%KIT_DIR:~0,-1%"
 set "PS1=%KIT_DIR%\scripts\windows_bootstrap.ps1"
+set "GUI_PS1=%KIT_DIR%\scripts\windows_launcher_gui.ps1"
 
-echo [Offgrid Wiki] Windows launcher
+echo [Offgrid Kit] Windows launcher
+if exist "%GUI_PS1%" (
+  where powershell.exe >nul 2>nul
+  if not errorlevel 1 (
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%GUI_PS1%" -KitDir "%KIT_DIR%"
+    goto :eof
+  )
+)
+
 if exist "%PS1%" (
   where powershell.exe >nul 2>nul
   if not errorlevel 1 (
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%PS1%" -KitDir "%KIT_DIR%"
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%PS1%" -KitDir "%KIT_DIR%" -OpenDashboard
   ) else (
     where pwsh.exe >nul 2>nul
     if errorlevel 1 (
@@ -17,7 +26,7 @@ if exist "%PS1%" (
       pause
       exit /b 1
     )
-    pwsh.exe -NoProfile -ExecutionPolicy Bypass -File "%PS1%" -KitDir "%KIT_DIR%"
+    pwsh.exe -NoProfile -ExecutionPolicy Bypass -File "%PS1%" -KitDir "%KIT_DIR%" -OpenDashboard
   )
   if errorlevel 1 (
     echo Windows bootstrap failed.

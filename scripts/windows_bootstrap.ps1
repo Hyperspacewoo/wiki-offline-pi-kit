@@ -1,5 +1,6 @@
 param(
-  [Parameter(Mandatory=$false)][string]$KitDir
+  [Parameter(Mandatory=$false)][string]$KitDir,
+  [Parameter(Mandatory=$false)][switch]$OpenDashboard
 )
 
 $ErrorActionPreference = "Stop"
@@ -142,3 +143,6 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "Done."
+if ($OpenDashboard) {
+  Start-Process "http://localhost:8090/setup"
+}

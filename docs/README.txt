@@ -1,5 +1,5 @@
-OFFGRID INTEL KIT (USB-first Offline Archive)
-=============================================
+OFFGRID KIT (USB-first Offline Archive)
+=======================================
 
 Purpose
 -------
@@ -43,10 +43,12 @@ Built into dashboard:
 
 USB Distribution Files
 ----------------------
-- `INSTALL_OFFLINE_KNOWLEDGE.sh` – one-command installer
-- `START_LINUX.sh` – launcher for Linux
-- `START_MAC.command` – launcher for macOS terminal flow
-- `START_WINDOWS.bat` – Windows notice (use WSL Ubuntu)
+- `START_WINDOWS.bat` – opens the native Windows Offgrid Kit Launcher
+- `START_LINUX.sh` – opens the Linux launcher when Python is available, with installer fallback
+- `START_MAC.command` – opens the macOS launcher when Python is available, with installer fallback
+- `INSTALL_OFFLINE_KNOWLEDGE.sh` – direct installer used by the launcher
+- `scripts/windows_launcher_gui.ps1` – Windows GUI launcher
+- `scripts/offgrid_launcher.py` – cross-platform launcher
 - `config/VERSION.json` – release/version metadata
 - `scripts/build_checksums.sh` / `scripts/verify_checksums.sh` – integrity workflow
 - `scripts/import_zims_from_usb.sh` – copy ZIMs from removable media

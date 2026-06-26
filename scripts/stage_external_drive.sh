@@ -58,16 +58,33 @@ setlocal
 call "%~dp0OfflineKnowledgeKit\wiki-offline-pi-kit\START_WINDOWS.bat"
 EOF
 
+cat > "$DRIVE_ROOT/START_LINUX.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+USB_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+bash "$USB_ROOT/OfflineKnowledgeKit/wiki-offline-pi-kit/START_LINUX.sh"
+EOF
+chmod +x "$DRIVE_ROOT/START_LINUX.sh"
+
+cat > "$DRIVE_ROOT/START_MAC.command" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+USB_ROOT="$(cd "$(dirname "$0")" && pwd)"
+bash "$USB_ROOT/OfflineKnowledgeKit/wiki-offline-pi-kit/START_MAC.command"
+EOF
+chmod +x "$DRIVE_ROOT/START_MAC.command"
+
 cat > "$DRIVE_ROOT/START_HERE.txt" <<'EOF'
-OFFLINE KNOWLEDGE KIT
-=====================
+OFFGRID KIT
+===========
 
 Primary kit location:
 - OfflineKnowledgeKit/wiki-offline-pi-kit
 
 Recommended launchers:
-- Linux/macOS: bash ./INSTALL_OFFLINE_KNOWLEDGE.sh
 - Windows:     START_WINDOWS.bat
+- Linux:       START_LINUX.sh
+- macOS:       START_MAC.command
 
 This drive copy is intended to be the single working offline kit.
 EOF

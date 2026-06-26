@@ -6,6 +6,8 @@ Use this checklist before selling or shipping a national batch.
 
 - Fresh Windows tester machine launches the dashboard.
 - Fresh Linux tester machine launches the dashboard.
+- Windows launcher opens and **Start / Repair Kit** can run without closing on preinstalled dependencies.
+- Linux/macOS launcher opens or cleanly falls back to the installer when Tk is unavailable.
 - Dashboard opens without internet.
 - Knowledge/ZIM server opens.
 - Map page opens.

@@ -10,6 +10,7 @@ Offline AI is powered by local `llama.cpp` (`llama-server`).
 - `config/` → bundle metadata/checksums
 - `zims/` → bundled `.zim` files (canonical location)
 - root launchers: `START_LINUX.sh`, `START_MAC.command`, `START_WINDOWS.bat`, `INSTALL_OFFLINE_KNOWLEDGE.sh`
+- launcher apps: `scripts/windows_launcher_gui.ps1` and `scripts/offgrid_launcher.py`
 
 ### Runtime model (single source of truth)
 
@@ -23,6 +24,26 @@ Offline AI is powered by local `llama.cpp` (`llama-server`).
 ```bash
 ./START_LINUX.sh
 ```
+
+## Quick Start (Windows)
+
+Double-click:
+
+```text
+START_WINDOWS.bat
+```
+
+This opens the native **Offgrid Kit Launcher**. Use **Start / Repair Kit** on a fresh machine, then **Open Dashboard**.
+
+## Quick Start (macOS)
+
+Double-click or run:
+
+```bash
+./START_MAC.command
+```
+
+This opens the cross-platform launcher when Python is available, with a terminal installer fallback.
 
 What this now sets up automatically from this single package:
 - Python runtime + dashboard services
@@ -77,6 +98,7 @@ Then open:
 
 ## Main URLs
 
+- Launcher: `START_WINDOWS.bat`, `START_LINUX.sh`, or `START_MAC.command`
 - Dashboard: `http://<HOST_IP>:8090`
 - Kiwix: `http://<HOST_IP>:8080`
 - Offline map: `http://<HOST_IP>:8091`

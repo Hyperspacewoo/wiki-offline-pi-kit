@@ -1,14 +1,16 @@
-Offgrid Intel Kit
-=================
+Offgrid Kit
+===========
 
 1) Verify integrity (recommended):
    ./scripts/verify_checksums.sh
 
-2) Start install:
-   ./START_LINUX.sh
+2) Open the launcher:
+   Windows: double-click START_WINDOWS.bat
+   Linux:   ./START_LINUX.sh
+   macOS:   ./START_MAC.command
 
-3) Open dashboard:
+3) If services are already running, open dashboard:
    http://<HOST_IP>:8090
 
 The dashboard auto-loads all discovered ZIM files.
-Use Open to launch selected ZIM in a new tab.
+Use the launcher or dashboard buttons to open knowledge, maps, AI, ebooks, updates, and setup checks.
