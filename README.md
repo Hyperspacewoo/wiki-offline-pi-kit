@@ -74,6 +74,8 @@ To mirror the verified bundle onto a mounted external drive:
 ./scripts/stage_external_drive.sh /media/void/YOUR_DRIVE --clean-old
 ```
 
+Staging mirrors application files, but preserves existing content in `models/`, `ebooks/`, and `zims/` by copying into those folders without deleting extra files.
+
 Then open:
 - Dashboard: `http://<HOST_IP>:8090`
 - First-run wizard: `http://<HOST_IP>:8090/setup`

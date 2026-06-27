@@ -33,6 +33,7 @@ Use this checklist before selling or shipping a national batch.
 - Include clear root launch files for Windows, macOS, and Linux.
 - Include printed or printable quick-start instructions.
 - Keep user content preservation policy: do not overwrite `models/`, `ebooks/`, or `zims/`.
+- When staging reused drives, confirm `models/`, `ebooks/`, and `zims/` are preserved and not deleted by sync.
 - Run a USB speed test on sample shipped drives if AI startup feels slow.
 
 ## Update Channel

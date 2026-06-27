@@ -42,7 +42,17 @@ rsync -a --delete --delete-excluded \
   --exclude='.git/' \
   --exclude='__pycache__/' \
   --exclude='*.pyc' \
+  --exclude='models/' \
+  --exclude='ebooks/' \
+  --exclude='zims/' \
   "$WIKI_KIT_ROOT/" "$TARGET_KIT/"
+
+for content_dir in models ebooks zims; do
+  if [[ -d "$WIKI_KIT_ROOT/$content_dir" ]]; then
+    mkdir -p "$TARGET_KIT/$content_dir"
+    rsync -a "$WIKI_KIT_ROOT/$content_dir/" "$TARGET_KIT/$content_dir/"
+  fi
+done
 
 cat > "$DRIVE_ROOT/INSTALL_OFFLINE_KNOWLEDGE.sh" <<'EOF'
 #!/usr/bin/env bash
